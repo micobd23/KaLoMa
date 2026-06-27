@@ -31,8 +31,8 @@ export default function ItemModal({ item, fromOFF, onConfirm, onClose }: Props) 
             <input
               type="number"
               value={amount}
-              min={1}
-              onChange={e => setAmount(Math.max(1, Number(e.target.value)))}
+              min={0}
+              onChange={e => setAmount(e.target.value === '' ? 0 : Math.max(0, Number(e.target.value)))}
               autoFocus
             />
           </div>

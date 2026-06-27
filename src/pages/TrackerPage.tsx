@@ -90,7 +90,7 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
   async function searchOFF(q: string, existing: SugItem[]) {
     setOffLoading(true)
     try {
-      const url = `https://de.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=8&fields=product_name,product_name_de,brands,nutriments`
+      const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=8&lc=de&fields=product_name,product_name_de,brands,nutriments`
       const res = await fetch(url)
       const data = await res.json()
       const products = (data.products ?? []).filter((p: any) => {
@@ -164,7 +164,7 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
   async function handleBarcodeScan(barcode: string) {
     setScannerOpen(false)
     try {
-      const res = await fetch(`https://de.openfoodfacts.org/api/v0/product/${barcode}.json`)
+      const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`)
       const data = await res.json()
       if (data.status === 1 && data.product) {
         const p = data.product
@@ -307,7 +307,7 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
         <div className="form-row">
           <div className="field">
             <label>Menge (g)</label>
-            <input type="number" value={amount} min={1} onChange={e => handleAmountChange(Number(e.target.value) || 100)} />
+            <input type="number" value={amount} min={0} onChange={e => handleAmountChange(e.target.value === '' ? 0 : Number(e.target.value))} />
           </div>
           <div className="field"><label>kcal</label><input type="number" value={kcalInput} onChange={e => setKcalInput(e.target.value)} placeholder="0" min={0} /></div>
           <div className="field"><label>Protein (g)</label><input type="number" value={proteinInput} onChange={e => setProteinInput(e.target.value)} placeholder="0" min={0} /></div>
