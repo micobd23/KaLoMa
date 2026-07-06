@@ -1,7 +1,9 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
-import { supabase, kj } from '../lib/supabase'
+import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react'
+import { supabase, r, kj } from '../lib/supabase'
 import type { FoodItem } from '../lib/supabase'
 import ItemModal from '../components/ItemModal'
+
+const BarcodeScanner = lazy(() => import('../components/BarcodeScanner'))
 
 interface Props {
   userId: string
@@ -24,6 +26,7 @@ export default function DatabasePage({ userId, meal, currentDate, onLogUpdate }:
   const [fat, setFat] = useState('')
   const [sortKey, setSortKey] = useState<SortKey>('name')
   const [pendingItem, setPendingItem] = useState<DbItem | null>(null)
+  const [scannerOpen, setScannerOpen] = useState(false)
 
   const fetchDb = useCallback(async () => {
     setLoading(true)
@@ -61,6 +64,39 @@ export default function DatabasePage({ userId, meal, currentDate, onLogUpdate }:
     fetchDb()
   }
 
+  async function handleBarcodeScan(barcode: string) {
+    setScannerOpen(false)
+    try {
+      const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`)
+      const data = await res.json()
+      if (data.status !== 1 || !data.product) {
+        alert(`Barcode ${barcode} nicht in Open Food Facts gefunden. Du kannst das Produkt manuell eintragen.`)
+        return
+      }
+      const p = data.product
+      const nm = p.nutriments ?? {}
+      const item = {
+        name: (p.product_name_de || p.product_name || barcode).trim(),
+        kcal: Math.round(nm['energy-kcal_100g'] ?? 0),
+        protein: r(nm['proteins_100g'] ?? 0),
+        carbs: r(nm['carbohydrates_100g'] ?? 0),
+        fat: r(nm['fat_100g'] ?? 0),
+      }
+      if (!item.name) {
+        alert('Produkt hat keinen Namen bei Open Food Facts. Bitte manuell eintragen.')
+        return
+      }
+      if (db.some(i => i.name.toLowerCase() === item.name.toLowerCase())) {
+        alert(`"${item.name}" ist schon in deiner Datenbank.`)
+        return
+      }
+      await supabase.from('food_db').insert({ user_id: userId, ...item })
+      fetchDb()
+    } catch {
+      alert('Fehler beim Laden des Produkts. Bitte Internetverbindung prüfen.')
+    }
+  }
+
   async function deleteItem(id: string) {
     await supabase.from('food_db').delete().eq('id', id)
     setDb(prev => prev.filter(i => i.id !== id))
@@ -85,9 +121,12 @@ export default function DatabasePage({ userId, meal, currentDate, onLogUpdate }:
 
   return (
     <>
-      <div className="section-heading">
-        Neues Lebensmittel anlegen
-        <span style={{ fontWeight: 400, color: 'var(--text3)', fontSize: 10, marginLeft: 6 }}>· Werte pro 100g</span>
+      <div className="section-heading" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span>
+          Neues Lebensmittel anlegen
+          <span style={{ fontWeight: 400, color: 'var(--text3)', fontSize: 10, marginLeft: 6 }}>· Werte pro 100g</span>
+        </span>
+        <button className="scan-btn" onClick={() => setScannerOpen(true)} title="Barcode scannen und direkt in die Datenbank speichern">📷</button>
       </div>
       <div className="card">
         <div className="form-row" style={{ gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr' }}>
@@ -155,6 +194,11 @@ export default function DatabasePage({ userId, meal, currentDate, onLogUpdate }:
           onConfirm={(amount) => confirmAdd(pendingItem, amount)}
           onClose={() => setPendingItem(null)}
         />
+      )}
+      {scannerOpen && (
+        <Suspense fallback={null}>
+          <BarcodeScanner onScan={handleBarcodeScan} onClose={() => setScannerOpen(false)} />
+        </Suspense>
       )}
     </>
   )
