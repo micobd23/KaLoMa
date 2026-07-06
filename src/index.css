@@ -34,6 +34,13 @@ body {
 
 #root { display: flex; flex-direction: column; }
 
+.app-shell {
+  width: 100%; max-width: 900px; margin: 0 auto;
+  display: flex; flex-direction: column; flex: 1;
+  transition: max-width .15s ease;
+}
+.app-shell.compact { max-width: 640px; }
+
 /* ---------- Title bar ---------- */
 .title-bar {
   background: linear-gradient(180deg, var(--win-chrome-1) 0%, var(--win-chrome-2) 100%);
@@ -134,8 +141,7 @@ body {
 .status-bar span + span { border-left: 1px solid var(--border); padding-left: 14px; }
 .status-bar .status-flex { flex: 1; }
 
-main { max-width: 900px; width: 100%; margin: 0 auto; padding: 1rem; padding-bottom: 2rem; flex: 1; }
-main.compact { max-width: 640px; }
+main { width: 100%; padding: 1rem; padding-bottom: 2rem; flex: 1; }
 
 .card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: .85rem 1rem; margin-bottom: 1rem; }
 .section-heading { font-size: 11px; font-weight: 700; color: var(--text2); margin-bottom: 6px; margin-top: .25rem; }
