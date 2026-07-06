@@ -10,10 +10,10 @@ interface Props {
 }
 
 export default function ItemModal({ item, fromOFF, onConfirm, onClose }: Props) {
-  const [amount, setAmount] = useState(100)
+  const [amount, setAmount] = useState('100')
   const [saveToDb, setSaveToDb] = useState(fromOFF)
 
-  const fac = amount / 100
+  const fac = (parseFloat(amount) || 0) / 100
   const preview = {
     kcal: Math.round(item.kcal * fac),
     protein: r(item.protein * fac),
@@ -32,7 +32,7 @@ export default function ItemModal({ item, fromOFF, onConfirm, onClose }: Props) 
               type="number"
               value={amount}
               min={0}
-              onChange={e => setAmount(e.target.value === '' ? 0 : Math.max(0, Number(e.target.value)))}
+              onChange={e => setAmount(e.target.value)}
               autoFocus
             />
           </div>
@@ -49,7 +49,7 @@ export default function ItemModal({ item, fromOFF, onConfirm, onClose }: Props) 
         )}
         <div className="modal-btns">
           <button className="btn" onClick={onClose}>Abbrechen</button>
-          <button className="btn btn-primary" onClick={() => onConfirm(amount, saveToDb)}>Hinzufügen</button>
+          <button className="btn btn-primary" onClick={() => onConfirm(parseFloat(amount) || 0, saveToDb)}>Hinzufügen</button>
         </div>
       </div>
     </div>

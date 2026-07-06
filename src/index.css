@@ -224,8 +224,18 @@ input::placeholder { color: var(--text3); }
 .sug-name { flex: 1; font-weight: 500; }
 .sug-meta { color: var(--text3); font-size: 11px; text-align: right; }
 .sug-badge { font-size: 10px; font-weight: 600; border-radius: 3px; padding: 1px 6px; white-space: nowrap; background: var(--accent); color: #fff; }
-.sug-badge.local { background: var(--bg4); color: var(--text2); }
 .sug-loading { padding: 10px; text-align: center; color: var(--text3); font-size: 12px; }
+
+.db-list { border: 1px solid var(--border2); border-radius: var(--radius); max-height: 480px; overflow-y: auto; }
+.db-list-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 10px; font-size: 12px; cursor: pointer; border-bottom: 1px solid var(--border); }
+.db-list-row:last-child { border-bottom: none; }
+.db-list-row:nth-child(even) { background: var(--grid-stripe); }
+.db-list-row:hover { background: var(--bg4); }
+.db-list-row.selected, .db-list-row.selected:nth-child(even) { background: var(--accent); }
+.db-list-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.db-list-kcal { color: var(--text3); font-size: 11px; flex-shrink: 0; }
+.db-list-row.selected .db-list-name { color: #fff; }
+.db-list-row.selected .db-list-kcal { color: #dce6f7; }
 
 .form-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 6px; margin-bottom: 8px; }
 @media (max-width: 560px) { .form-row { grid-template-columns: 1fr 1fr; } }
@@ -267,8 +277,7 @@ input::placeholder { color: var(--text3); }
 .summary-row:last-child { border-bottom: none; }
 .summary-row.total { background: var(--bg4); font-weight: 700; }
 .summary-row.head { background: var(--bg3); font-weight: 700; font-size: 10.5px; color: var(--text2); }
-.summary-row span { padding: 5px 8px; border-right: 1px solid var(--border); flex: 1; text-align: right; }
-.summary-row span:first-child { text-align: left; flex: 1.4; }
+.summary-row span { padding: 5px 8px; border-right: 1px solid var(--border); }
 .summary-row span:last-child { border-right: none; }
 
 /* ---------- Kalorientabelle toolbar ---------- */

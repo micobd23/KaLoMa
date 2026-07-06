@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from 'react'
 import { supabase, MEALS, r, kj, dateKey, formatDate } from '../lib/supabase'
 import type { FoodItem, LogEntry, MealKey } from '../lib/supabase'
 import ItemModal from '../components/ItemModal'
@@ -14,7 +14,7 @@ interface Props {
 
 interface PendingItem { item: FoodItem; fromOFF: boolean }
 
-interface SugItem extends FoodItem { source: 'local' | 'off'; brand?: string }
+interface SugItem extends FoodItem { source: 'off'; brand?: string }
 
 export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Props) {
   const [log, setLog] = useState<LogEntry[]>([])
@@ -24,7 +24,7 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
 
   // Form
   const [query, setQuery] = useState('')
-  const [amount, setAmount] = useState(100)
+  const [amount, setAmount] = useState('100')
   const [kcalInput, setKcalInput] = useState('')
   const [proteinInput, setProteinInput] = useState('')
   const [carbsInput, setCarbsInput] = useState('')
@@ -71,24 +71,21 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
-  // Search logic
+  // Persistent browsable list of the local food database, filtered live by the search field
+  const visibleFoodDb = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    return q ? foodDb.filter(i => i.name.toLowerCase().includes(q)) : foodDb
+  }, [foodDb, query])
+
+  // Open Food Facts search (external results only — local matches are always visible in the list above)
   useEffect(() => {
     clearTimeout(offTimerRef.current)
-    if (!query.trim()) { setSuggestions([]); setShowSuggestions(false); return }
-
-    const local: SugItem[] = foodDb
-      .filter(i => i.name.toLowerCase().includes(query.toLowerCase()))
-      .slice(0, 4)
-      .map(i => ({ ...i, source: 'local' as const }))
-    setSuggestions(local)
+    if (query.trim().length < 2) { setSuggestions([]); setShowSuggestions(false); return }
     setShowSuggestions(true)
+    offTimerRef.current = setTimeout(() => searchOFF(query), 500)
+  }, [query])
 
-    if (query.trim().length >= 2) {
-      offTimerRef.current = setTimeout(() => searchOFF(query, local), 500)
-    }
-  }, [query, foodDb])
-
-  async function searchOFF(q: string, existing: SugItem[]) {
+  async function searchOFF(q: string) {
     setOffLoading(true)
     try {
       const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=8&lc=de&fields=product_name,product_name_de,brands,nutriments`
@@ -107,8 +104,8 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
         fat: r(p.nutriments['fat_100g'] ?? 0),
         source: 'off' as const,
       })).filter((i: SugItem) => i.name)
-      setSuggestions([...existing, ...offItems])
-    } catch { /* network error – show only local */ }
+      setSuggestions(offItems)
+    } catch { /* network error – show nothing */ }
     setOffLoading(false)
   }
 
@@ -116,15 +113,20 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
     setQuery(item.name)
     setSelectedBase(item)
     setShowSuggestions(false)
-    applyBase(item, amount)
+    applyBase(item, parseFloat(amount) || 0)
     // Auto-save OFF items to local DB
-    if (item.source === 'off') {
-      const exists = foodDb.some(i => i.name.toLowerCase() === item.name.toLowerCase())
-      if (!exists) {
-        supabase.from('food_db').insert({ user_id: userId, name: item.name, kcal: item.kcal, protein: item.protein, carbs: item.carbs, fat: item.fat })
-          .then(() => fetchFoodDb())
-      }
+    const exists = foodDb.some(i => i.name.toLowerCase() === item.name.toLowerCase())
+    if (!exists) {
+      supabase.from('food_db').insert({ user_id: userId, name: item.name, kcal: item.kcal, protein: item.protein, carbs: item.carbs, fat: item.fat })
+        .then(() => fetchFoodDb())
     }
+  }
+
+  function selectFromDb(item: FoodItem & { id: string }) {
+    setQuery(item.name)
+    setSelectedBase(item)
+    setShowSuggestions(false)
+    applyBase(item, parseFloat(amount) || 0)
   }
 
   function applyBase(base: FoodItem, amt: number) {
@@ -135,9 +137,9 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
     setFatInput(String(r(base.fat * fac)))
   }
 
-  function handleAmountChange(val: number) {
+  function handleAmountChange(val: string) {
     setAmount(val)
-    if (selectedBase) applyBase(selectedBase, val)
+    if (selectedBase) applyBase(selectedBase, parseFloat(val) || 0)
   }
 
   async function addToLog() {
@@ -147,13 +149,13 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
       date: dateKey(date),
       meal,
       name: query.trim(),
-      amount,
+      amount: parseFloat(amount) || 0,
       kcal: parseFloat(kcalInput) || 0,
       protein: parseFloat(proteinInput) || 0,
       carbs: parseFloat(carbsInput) || 0,
       fat: parseFloat(fatInput) || 0,
     })
-    setQuery(''); setAmount(100); setKcalInput(''); setProteinInput(''); setCarbsInput(''); setFatInput(''); setSelectedBase(null)
+    setQuery(''); setAmount('100'); setKcalInput(''); setProteinInput(''); setCarbsInput(''); setFatInput(''); setSelectedBase(null)
     fetchLog()
   }
 
@@ -277,7 +279,7 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
                     autoComplete="off"
                   />
                 </div>
-                {showSuggestions && suggestions.length > 0 && (
+                {showSuggestions && (suggestions.length > 0 || offLoading) && (
                   <div className="suggestions">
                     {suggestions.map((item, i) => (
                       <div key={i} className="suggestion-item" onMouseDown={() => selectSuggestion(item)}>
@@ -285,7 +287,7 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
                           {item.name}
                           {item.brand && <span style={{ color: 'var(--text3)', fontWeight: 400, fontSize: 11 }}> · {item.brand}</span>}
                         </span>
-                        <span className={`sug-badge${item.source === 'local' ? ' local' : ''}`}>{item.source === 'local' ? 'Meine DB' : 'OFF'}</span>
+                        <span className="sug-badge">OFF</span>
                         <span className="sug-meta">{Math.round(item.kcal)} kcal</span>
                       </div>
                     ))}
@@ -296,10 +298,28 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
               <button className="scan-btn" onClick={() => setScannerOpen(true)} title="Barcode scannen">📷</button>
             </div>
 
+            <div className="field" style={{ marginBottom: 6 }}>
+              <label>Meine Datenbank <span style={{ fontWeight: 400, color: 'var(--text3)' }}>· zum Auswählen anklicken</span></label>
+              <div className="db-list">
+                {!visibleFoodDb.length ? (
+                  <p className="empty" style={{ padding: '10px 0' }}>{query.trim() ? 'Keine Treffer.' : 'Noch keine Lebensmittel gespeichert.'}</p>
+                ) : visibleFoodDb.map(item => (
+                  <div
+                    key={item.id}
+                    className={`db-list-row${selectedBase?.name === item.name ? ' selected' : ''}`}
+                    onClick={() => selectFromDb(item)}
+                  >
+                    <span className="db-list-name">{item.name}</span>
+                    <span className="db-list-kcal">{Math.round(item.kcal)} kcal</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <div className="form-row">
               <div className="field">
                 <label>Menge (g)</label>
-                <input type="number" value={amount} min={0} onChange={e => handleAmountChange(e.target.value === '' ? 0 : Number(e.target.value))} />
+                <input type="number" value={amount} min={0} onChange={e => handleAmountChange(e.target.value)} />
               </div>
               <div className="field"><label>kcal</label><input type="number" value={kcalInput} onChange={e => setKcalInput(e.target.value)} placeholder="0" min={0} /></div>
               <div className="field"><label>Protein (g)</label><input type="number" value={proteinInput} onChange={e => setProteinInput(e.target.value)} placeholder="0" min={0} /></div>
@@ -361,7 +381,12 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
             {!logLoading && log.length > 0 && (
               <div className="summary-table">
                 <div className="summary-row head">
-                  <span>Summen</span><span>kcal</span><span className="hide-sm">kJ</span><span>Prot.</span><span>Kh.</span><span>Fett</span>
+                  <span className="grid-col-name">Summen</span>
+                  <span className="grid-col-k">kcal</span>
+                  <span className="grid-col-m hide-sm">kJ</span>
+                  <span className="grid-col-m">Prot.</span>
+                  <span className="grid-col-m">Kh.</span>
+                  <span className="grid-col-m">Fett</span>
                 </div>
                 {grouped.map(g => {
                   const s = g.entries.reduce((acc, e) => ({
@@ -369,12 +394,22 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
                   }), { kcal: 0, protein: 0, carbs: 0, fat: 0 })
                   return (
                     <div className="summary-row" key={g.key}>
-                      <span>{g.label}</span><span>{Math.round(s.kcal)}</span><span className="hide-sm">{kj(s.kcal)}</span><span>{r(s.protein)}</span><span>{r(s.carbs)}</span><span>{r(s.fat)}</span>
+                      <span className="grid-col-name"><span className="grid-name-text">{g.label}</span></span>
+                      <span className="grid-col-k">{Math.round(s.kcal)}</span>
+                      <span className="grid-col-m hide-sm">{kj(s.kcal)}</span>
+                      <span className="grid-col-m">{r(s.protein)}</span>
+                      <span className="grid-col-m">{r(s.carbs)}</span>
+                      <span className="grid-col-m">{r(s.fat)}</span>
                     </div>
                   )
                 })}
                 <div className="summary-row total">
-                  <span>Tagessumme</span><span>{Math.round(totals.kcal)}</span><span className="hide-sm">{kj(totals.kcal)}</span><span>{r(totals.protein)}</span><span>{r(totals.carbs)}</span><span>{r(totals.fat)}</span>
+                  <span className="grid-col-name"><span className="grid-name-text">Tagessumme</span></span>
+                  <span className="grid-col-k">{Math.round(totals.kcal)}</span>
+                  <span className="grid-col-m hide-sm">{kj(totals.kcal)}</span>
+                  <span className="grid-col-m">{r(totals.protein)}</span>
+                  <span className="grid-col-m">{r(totals.carbs)}</span>
+                  <span className="grid-col-m">{r(totals.fat)}</span>
                 </div>
               </div>
             )}
