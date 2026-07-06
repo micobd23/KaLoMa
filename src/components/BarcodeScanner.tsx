@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
+import { BrowserMultiFormatReader, DecodeHintType, BarcodeFormat } from '@zxing/library'
+import type { Result } from '@zxing/library'
 
 interface Props {
   onScan: (barcode: string) => void
@@ -7,7 +9,7 @@ interface Props {
 
 export default function BarcodeScanner({ onScan, onClose }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null)
-  const readerRef = useRef<any>(null)
+  const readerRef = useRef<BrowserMultiFormatReader | null>(null)
   const [status, setStatus] = useState('Kamera wird gestartet…')
 
   useEffect(() => {
@@ -28,20 +30,18 @@ export default function BarcodeScanner({ onScan, onClose }: Props) {
   }
 
   async function start() {
-    const ZXing = (window as any).ZXing
-    if (!ZXing) { setStatus('Scanner-Bibliothek nicht geladen. Bitte Seite neu laden.'); return }
     try {
       const hints = new Map()
-      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
-        ZXing.BarcodeFormat.EAN_13,
-        ZXing.BarcodeFormat.EAN_8,
-        ZXing.BarcodeFormat.CODE_128,
-        ZXing.BarcodeFormat.UPC_A,
+      hints.set(DecodeHintType.POSSIBLE_FORMATS, [
+        BarcodeFormat.EAN_13,
+        BarcodeFormat.EAN_8,
+        BarcodeFormat.CODE_128,
+        BarcodeFormat.UPC_A,
       ])
-      const reader = new ZXing.BrowserMultiFormatReader(hints)
+      const reader = new BrowserMultiFormatReader(hints)
       readerRef.current = reader
       setStatus('Barcode in die Kamera halten…')
-      await reader.decodeFromVideoDevice(null, videoRef.current, (result: any) => {
+      await reader.decodeFromVideoDevice(null, videoRef.current, (result: Result | undefined) => {
         if (result) {
           stop()
           onScan(result.getText())

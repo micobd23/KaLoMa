@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { supabase, MEALS, r, dateKey, formatDate } from '../lib/supabase'
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react'
+import { supabase, MEALS, r, kj, dateKey, formatDate } from '../lib/supabase'
 import type { FoodItem, LogEntry, MealKey } from '../lib/supabase'
-import BarcodeScanner from '../components/BarcodeScanner'
 import ItemModal from '../components/ItemModal'
+
+const BarcodeScanner = lazy(() => import('../components/BarcodeScanner'))
 
 interface Props {
   userId: string
@@ -257,105 +258,135 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
         </div>
       )}
 
-      {/* Add entry */}
-      <div className="section-heading">Eintrag hinzufügen</div>
-      <div className="card">
-        {/* Meal selector */}
-        <div className="meal-selector">
-          {MEALS.map(m => (
-            <button key={m.key} className={`meal-btn${meal === m.key ? ' active' : ''}`} onClick={() => setMeal(m.key)}>
-              {m.label}
-            </button>
-          ))}
+      <div className="tracker-grid">
+        {/* Left: Erfassung */}
+        <div>
+          <div className="section-heading">Erfassung</div>
+          <div className="card">
+            <div className="search-row">
+              <div className="search-wrap" ref={searchWrapRef}>
+                <div className="field">
+                  <label>Lebensmittel suchen</label>
+                  <input
+                    type="text"
+                    value={query}
+                    onChange={e => setQuery(e.target.value)}
+                    onFocus={() => query && setShowSuggestions(true)}
+                    onKeyDown={e => e.key === 'Enter' && !showSuggestions && addToLog()}
+                    placeholder="Name eingeben oder Barcode scannen…"
+                    autoComplete="off"
+                  />
+                </div>
+                {showSuggestions && suggestions.length > 0 && (
+                  <div className="suggestions">
+                    {suggestions.map((item, i) => (
+                      <div key={i} className="suggestion-item" onMouseDown={() => selectSuggestion(item)}>
+                        <span className="sug-name">
+                          {item.name}
+                          {item.brand && <span style={{ color: 'var(--text3)', fontWeight: 400, fontSize: 11 }}> · {item.brand}</span>}
+                        </span>
+                        <span className={`sug-badge${item.source === 'local' ? ' local' : ''}`}>{item.source === 'local' ? 'Meine DB' : 'OFF'}</span>
+                        <span className="sug-meta">{Math.round(item.kcal)} kcal</span>
+                      </div>
+                    ))}
+                    {offLoading && <div className="sug-loading">Suche in Open Food Facts…</div>}
+                  </div>
+                )}
+              </div>
+              <button className="scan-btn" onClick={() => setScannerOpen(true)} title="Barcode scannen">📷</button>
+            </div>
+
+            <div className="form-row">
+              <div className="field">
+                <label>Menge (g)</label>
+                <input type="number" value={amount} min={0} onChange={e => handleAmountChange(e.target.value === '' ? 0 : Number(e.target.value))} />
+              </div>
+              <div className="field"><label>kcal</label><input type="number" value={kcalInput} onChange={e => setKcalInput(e.target.value)} placeholder="0" min={0} /></div>
+              <div className="field"><label>Protein (g)</label><input type="number" value={proteinInput} onChange={e => setProteinInput(e.target.value)} placeholder="0" min={0} /></div>
+              <div className="field"><label>Kohlen. (g)</label><input type="number" value={carbsInput} onChange={e => setCarbsInput(e.target.value)} placeholder="0" min={0} /></div>
+              <div className="field"><label>Fett (g)</label><input type="number" value={fatInput} onChange={e => setFatInput(e.target.value)} placeholder="0" min={0} /></div>
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 8, minHeight: 16 }}>
+              {kcalInput && `→ ${kj(parseFloat(kcalInput) || 0)} kJ`}
+            </div>
+            <button className="btn btn-primary" onClick={addToLog}>Übernehmen</button>
+          </div>
         </div>
 
-        {/* Search + scanner */}
-        <div className="search-row">
-          <div className="search-wrap" ref={searchWrapRef}>
-            <div className="field">
-              <label>Lebensmittel suchen</label>
-              <input
-                type="text"
-                value={query}
-                onChange={e => setQuery(e.target.value)}
-                onFocus={() => query && setShowSuggestions(true)}
-                onKeyDown={e => e.key === 'Enter' && !showSuggestions && addToLog()}
-                placeholder="Name eingeben oder Barcode scannen…"
-                autoComplete="off"
-              />
+        {/* Right: Berechnungstag */}
+        <div>
+          <div className="section-heading">Berechnungstag</div>
+          <div className="card">
+            <div className="meal-selector">
+              {MEALS.map(m => (
+                <button key={m.key} className={`meal-btn${meal === m.key ? ' active' : ''}`} onClick={() => setMeal(m.key)}>
+                  {m.label}
+                </button>
+              ))}
             </div>
-            {showSuggestions && suggestions.length > 0 && (
-              <div className="suggestions">
-                {suggestions.map((item, i) => (
-                  <div key={i} className="suggestion-item" onMouseDown={() => selectSuggestion(item)}>
-                    <span className="sug-name">
-                      {item.name}
-                      {item.brand && <span style={{ color: 'var(--text3)', fontWeight: 400, fontSize: 11 }}> · {item.brand}</span>}
-                    </span>
-                    <span className={`sug-badge${item.source === 'local' ? ' local' : ''}`}>{item.source === 'local' ? 'Meine DB' : 'OFF'}</span>
-                    <span className="sug-meta">{Math.round(item.kcal)} kcal</span>
+
+            {logLoading ? (
+              <p className="loading-msg">Lädt…</p>
+            ) : !log.length ? (
+              <p className="empty">Noch keine Einträge für diesen Tag.</p>
+            ) : grouped.map(group => (
+              <div key={group.key} className="meal-group-block">
+                <div className="meal-group-header">
+                  <span>{group.label}</span>
+                  <span className="meal-group-kcal">{Math.round(group.entries.reduce((s, e) => s + e.kcal, 0))} kcal</span>
+                </div>
+                <div className="grid-table">
+                  <div className="grid-head">
+                    <span className="grid-col-name">Lebensmittel</span>
+                    <span className="grid-col-m hide-sm">kJ</span>
+                    <span className="grid-col-k">kcal</span>
+                    <span className="grid-col-del" />
                   </div>
-                ))}
-                {offLoading && <div className="sug-loading">Suche in Open Food Facts…</div>}
+                  {group.entries.map(entry => (
+                    <div key={entry.id} className="grid-row">
+                      <span className="grid-col-name">
+                        <span className="grid-name-text">
+                          {entry.name}{entry.amount !== 100 && ` (${Math.round(entry.amount)}g)`}
+                        </span>
+                      </span>
+                      <span className="grid-col-m hide-sm">{kj(entry.kcal)}</span>
+                      <span className="grid-col-k">{Math.round(entry.kcal)}</span>
+                      <span className="grid-col-del"><button className="del-btn" onClick={() => deleteEntry(entry.id)}>×</button></span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+
+            {!logLoading && log.length > 0 && (
+              <div className="summary-table">
+                <div className="summary-row head">
+                  <span>Summen</span><span>kcal</span><span className="hide-sm">kJ</span><span>Prot.</span><span>Kh.</span><span>Fett</span>
+                </div>
+                {grouped.map(g => {
+                  const s = g.entries.reduce((acc, e) => ({
+                    kcal: acc.kcal + e.kcal, protein: acc.protein + e.protein, carbs: acc.carbs + e.carbs, fat: acc.fat + e.fat,
+                  }), { kcal: 0, protein: 0, carbs: 0, fat: 0 })
+                  return (
+                    <div className="summary-row" key={g.key}>
+                      <span>{g.label}</span><span>{Math.round(s.kcal)}</span><span className="hide-sm">{kj(s.kcal)}</span><span>{r(s.protein)}</span><span>{r(s.carbs)}</span><span>{r(s.fat)}</span>
+                    </div>
+                  )
+                })}
+                <div className="summary-row total">
+                  <span>Tagessumme</span><span>{Math.round(totals.kcal)}</span><span className="hide-sm">{kj(totals.kcal)}</span><span>{r(totals.protein)}</span><span>{r(totals.carbs)}</span><span>{r(totals.fat)}</span>
+                </div>
               </div>
             )}
           </div>
-          <button className="scan-btn" onClick={() => setScannerOpen(true)} title="Barcode scannen">📷</button>
         </div>
-
-        {/* Macro inputs */}
-        <div className="form-row">
-          <div className="field">
-            <label>Menge (g)</label>
-            <input type="number" value={amount} min={0} onChange={e => handleAmountChange(e.target.value === '' ? 0 : Number(e.target.value))} />
-          </div>
-          <div className="field"><label>kcal</label><input type="number" value={kcalInput} onChange={e => setKcalInput(e.target.value)} placeholder="0" min={0} /></div>
-          <div className="field"><label>Protein (g)</label><input type="number" value={proteinInput} onChange={e => setProteinInput(e.target.value)} placeholder="0" min={0} /></div>
-          <div className="field"><label>Kohlen. (g)</label><input type="number" value={carbsInput} onChange={e => setCarbsInput(e.target.value)} placeholder="0" min={0} /></div>
-          <div className="field"><label>Fett (g)</label><input type="number" value={fatInput} onChange={e => setFatInput(e.target.value)} placeholder="0" min={0} /></div>
-        </div>
-        <button className="btn btn-primary" onClick={addToLog}>+ Hinzufügen</button>
       </div>
 
-      {/* Log */}
-      <div className="section-heading">Gegessen</div>
-      <div className="card" style={{ padding: '.5rem 1.25rem' }}>
-        <div className="col-headers">
-          <span className="col-name">Lebensmittel</span>
-          <span className="col-m">Prot.</span>
-          <span className="col-m">Kh.</span>
-          <span className="col-m">Fett</span>
-          <span className="col-k">kcal</span>
-          <span className="col-del" />
-        </div>
-        {logLoading ? (
-          <p className="loading-msg">Lädt…</p>
-        ) : !log.length ? (
-          <p className="empty">Noch keine Einträge für diesen Tag.</p>
-        ) : grouped.map(group => (
-          <div key={group.key}>
-            <div className="meal-group-header">
-              <span>{group.label}</span>
-              <span className="meal-group-kcal">{Math.round(group.entries.reduce((s, e) => s + e.kcal, 0))} kcal</span>
-            </div>
-            {group.entries.map(entry => (
-              <div key={entry.id} className="entry-row">
-                <span className="entry-name">
-                  {entry.name}
-                  {entry.amount !== 100 && <span className="entry-amt"> ({Math.round(entry.amount)}g)</span>}
-                </span>
-                <span className="entry-macro">{r(entry.protein)}g</span>
-                <span className="entry-macro">{r(entry.carbs)}g</span>
-                <span className="entry-macro">{r(entry.fat)}g</span>
-                <span className="entry-kcal">{Math.round(entry.kcal)} kcal</span>
-                <button className="del-btn" onClick={() => deleteEntry(entry.id)}>×</button>
-              </div>
-            ))}
-          </div>
-        ))}
-      </div>
-
-      {scannerOpen && <BarcodeScanner onScan={handleBarcodeScan} onClose={() => setScannerOpen(false)} />}
+      {scannerOpen && (
+        <Suspense fallback={null}>
+          <BarcodeScanner onScan={handleBarcodeScan} onClose={() => setScannerOpen(false)} />
+        </Suspense>
+      )}
       {pendingItem && (
         <ItemModal
           item={pendingItem.item}

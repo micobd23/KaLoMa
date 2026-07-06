@@ -1,21 +1,34 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { Session } from '@supabase/supabase-js'
-import { supabase, dateKey } from './lib/supabase'
+import { supabase, dateKey, formatDate } from './lib/supabase'
 import AuthPage from './components/AuthPage'
 import SettingsModal from './components/SettingsModal'
+import AboutDialog from './components/AboutDialog'
 import TrackerPage from './pages/TrackerPage'
 import StatsPage from './pages/StatsPage'
 import DatabasePage from './pages/DatabasePage'
 
 type Tab = 'tracker' | 'stats' | 'db'
 
+const TAB_LABEL: Record<Tab, string> = {
+  tracker: 'Tageslog',
+  stats: 'Statistik',
+  db: 'Kalorientabelle',
+}
+
 export default function App() {
   const [session, setSession] = useState<Session | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [tab, setTab] = useState<Tab>('tracker')
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [aboutOpen, setAboutOpen] = useState(false)
   const [kcalGoal, setKcalGoal] = useState<number | null>(null)
   const [logRefreshKey, setLogRefreshKey] = useState(0)
+
+  const [openMenu, setOpenMenu] = useState<string | null>(null)
+  const [collapsed, setCollapsed] = useState(false)
+  const [compact, setCompact] = useState(false)
+  const menuBarRef = useRef<HTMLDivElement>(null)
 
   const today = new Date(); today.setHours(0, 0, 0, 0)
   const [trackerDate, setTrackerDate] = useState(today)
@@ -32,6 +45,14 @@ export default function App() {
       else setKcalGoal(null)
     })
     return () => subscription.unsubscribe()
+  }, [])
+
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (!menuBarRef.current?.contains(e.target as Node)) setOpenMenu(null)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
   }, [])
 
   async function loadSettings(userId: string) {
@@ -59,48 +80,115 @@ export default function App() {
     setTab('tracker')
   }
 
+  async function handleClose() {
+    if (confirm('KaLoMa schließen und abmelden?')) {
+      await supabase.auth.signOut()
+    }
+  }
+
+  function goTo(t: Tab) {
+    setTab(t)
+    setOpenMenu(null)
+  }
+
   if (authLoading) return <div className="app-loading">🥗</div>
   if (!session) return <AuthPage />
 
   return (
     <>
-      <header>
-        <h1>🥗 KaLoMa</h1>
-        <button className="header-btn" onClick={() => setSettingsOpen(true)} aria-label="Einstellungen">⚙</button>
-      </header>
-
-      <div className="tab-bar">
-        <button className={`tab${tab === 'tracker' ? ' active' : ''}`} onClick={() => setTab('tracker')}>Tageslog</button>
-        <button className={`tab${tab === 'stats' ? ' active' : ''}`} onClick={() => setTab('stats')}>Statistik</button>
-        <button className={`tab${tab === 'db' ? ' active' : ''}`} onClick={() => setTab('db')}>Datenbank</button>
+      <div className="title-bar">
+        <div className="traffic-lights">
+          <button className="traffic-light red" title="Abmelden" onClick={handleClose} />
+          <button className="traffic-light yellow" title="Einklappen" onClick={() => setCollapsed(c => !c)} />
+          <button className="traffic-light green" title="Breite umschalten" onClick={() => setCompact(c => !c)} />
+        </div>
+        <div className="title-bar-title">KaLoMa 4.60 – {TAB_LABEL[tab]}</div>
       </div>
 
-      <main>
-        {tab === 'tracker' && (
-          <TrackerPage
-            key={logRefreshKey}
-            userId={session.user.id}
-            kcalGoal={kcalGoal}
-            date={trackerDate}
-            onDateChange={setTrackerDate}
-          />
-        )}
-        {tab === 'stats' && (
-          <StatsPage userId={session.user.id} onJumpToDay={handleJumpToDay} />
-        )}
-        {tab === 'db' && (
-          <DatabasePage
-            userId={session.user.id}
-            meal="frühstück"
-            currentDate={dateKey(trackerDate)}
-            onLogUpdate={() => { setLogRefreshKey(k => k + 1); setTab('tracker') }}
-          />
-        )}
-      </main>
+      {!collapsed && (
+        <>
+          <div className="menu-bar" ref={menuBarRef}>
+            <div className={`menu-item${openMenu === 'datei' ? ' open' : ''}`}>
+              <button className="menu-item-btn" onClick={() => setOpenMenu(m => m === 'datei' ? null : 'datei')}>Datei</button>
+              {openMenu === 'datei' && (
+                <div className="menu-dropdown">
+                  <button onClick={handleClose}>Abmelden</button>
+                </div>
+              )}
+            </div>
+            <div className={`menu-item${openMenu === 'ansicht' ? ' open' : ''}`}>
+              <button className="menu-item-btn" onClick={() => setOpenMenu(m => m === 'ansicht' ? null : 'ansicht')}>Ansicht</button>
+              {openMenu === 'ansicht' && (
+                <div className="menu-dropdown">
+                  <button onClick={() => goTo('tracker')}>Tageslog</button>
+                  <button onClick={() => goTo('stats')}>Statistik</button>
+                  <button onClick={() => goTo('db')}>Kalorientabelle</button>
+                </div>
+              )}
+            </div>
+            <div className={`menu-item${openMenu === 'extras' ? ' open' : ''}`}>
+              <button className="menu-item-btn" onClick={() => setOpenMenu(m => m === 'extras' ? null : 'extras')}>Extras</button>
+              {openMenu === 'extras' && (
+                <div className="menu-dropdown">
+                  <button onClick={() => { setSettingsOpen(true); setOpenMenu(null) }}>Einstellungen…</button>
+                </div>
+              )}
+            </div>
+            <div className={`menu-item${openMenu === 'hilfe' ? ' open' : ''}`}>
+              <button className="menu-item-btn" onClick={() => setOpenMenu(m => m === 'hilfe' ? null : 'hilfe')}>Hilfe</button>
+              {openMenu === 'hilfe' && (
+                <div className="menu-dropdown">
+                  <button onClick={() => { setAboutOpen(true); setOpenMenu(null) }}>Über KaLoMa…</button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="tool-bar">
+            <button className={`tool-btn${tab === 'tracker' ? ' active' : ''}`} title="Tageslog" onClick={() => setTab('tracker')}>📝</button>
+            <button className={`tool-btn${tab === 'stats' ? ' active' : ''}`} title="Statistik" onClick={() => setTab('stats')}>📊</button>
+            <button className={`tool-btn${tab === 'db' ? ' active' : ''}`} title="Kalorientabelle" onClick={() => setTab('db')}>🗂</button>
+            <div className="tool-sep" />
+            <button className="tool-btn" title="Einstellungen" onClick={() => setSettingsOpen(true)}>⚙</button>
+            <button className="tool-btn" title="Über KaLoMa" onClick={() => setAboutOpen(true)}>❓</button>
+          </div>
+
+          <main className={compact ? 'compact' : ''}>
+            {tab === 'tracker' && (
+              <TrackerPage
+                key={logRefreshKey}
+                userId={session.user.id}
+                kcalGoal={kcalGoal}
+                date={trackerDate}
+                onDateChange={setTrackerDate}
+              />
+            )}
+            {tab === 'stats' && (
+              <StatsPage userId={session.user.id} onJumpToDay={handleJumpToDay} />
+            )}
+            {tab === 'db' && (
+              <DatabasePage
+                userId={session.user.id}
+                meal="frühstück"
+                currentDate={dateKey(trackerDate)}
+                onLogUpdate={() => { setLogRefreshKey(k => k + 1); setTab('tracker') }}
+              />
+            )}
+          </main>
+
+          <div className="status-bar">
+            <span>{TAB_LABEL[tab]}</span>
+            {tab === 'tracker' && <span>{formatDate(trackerDate)}</span>}
+            <span className="status-flex" />
+            <span>Ziel: {kcalGoal ? 'AN' : 'AUS'}</span>
+          </div>
+        </>
+      )}
 
       {settingsOpen && (
         <SettingsModal current={kcalGoal} onSave={saveSettings} onClose={() => setSettingsOpen(false)} />
       )}
+      {aboutOpen && <AboutDialog onClose={() => setAboutOpen(false)} />}
     </>
   )
 }
