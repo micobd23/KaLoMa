@@ -95,7 +95,7 @@ export default function App() {
   if (!session) return <AuthPage />
 
   return (
-    <>
+    <div className={`app-shell${compact ? ' compact' : ''}`}>
       <div className="title-bar">
         <div className="traffic-lights">
           <button className="traffic-light red" title="Abmelden" onClick={handleClose} />
@@ -153,7 +153,7 @@ export default function App() {
             <button className="tool-btn" title="Über KaLoMa" onClick={() => setAboutOpen(true)}>❓</button>
           </div>
 
-          <main className={compact ? 'compact' : ''}>
+          <main>
             {tab === 'tracker' && (
               <TrackerPage
                 key={logRefreshKey}
@@ -189,6 +189,6 @@ export default function App() {
         <SettingsModal current={kcalGoal} onSave={saveSettings} onClose={() => setSettingsOpen(false)} />
       )}
       {aboutOpen && <AboutDialog onClose={() => setAboutOpen(false)} />}
-    </>
+    </div>
   )
 }
