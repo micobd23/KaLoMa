@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { useToast } from './ToastProvider'
 
 interface Props {
   current: number | null
@@ -8,6 +9,7 @@ interface Props {
 }
 
 export default function SettingsModal({ current, onSave, onClose }: Props) {
+  const { showToast } = useToast()
   const [goal, setGoal] = useState(current?.toString() ?? '')
 
   async function handleSave() {
@@ -16,7 +18,8 @@ export default function SettingsModal({ current, onSave, onClose }: Props) {
   }
 
   async function handleLogout() {
-    await supabase.auth.signOut()
+    const { error } = await supabase.auth.signOut()
+    if (error) showToast('Abmelden fehlgeschlagen. Bitte Internetverbindung prüfen.', { type: 'error' })
   }
 
   return (

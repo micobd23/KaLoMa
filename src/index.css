@@ -342,3 +342,13 @@ input::placeholder { color: var(--text3); }
 .about-meta { font-size: 11.5px; color: var(--text2); text-align: center; line-height: 1.8; border-top: 1px solid var(--border); padding-top: 10px; }
 
 .app-loading { min-height: 100vh; display: flex; align-items: center; justify-content: center; font-size: 24px; color: var(--text3); }
+
+/* ---------- Toasts ---------- */
+.toast-stack { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); z-index: 300; display: flex; flex-direction: column; gap: 6px; width: min(90vw, 380px); }
+.toast { background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--radius); padding: 8px 10px; font-size: 12.5px; color: var(--text); box-shadow: 0 8px 20px rgba(0,0,0,.18); display: flex; align-items: center; gap: 8px; }
+.toast-error { border-color: var(--danger); }
+.toast-error .toast-msg { color: var(--danger); }
+.toast-msg { flex: 1; }
+.toast-action { flex-shrink: 0; height: 26px; padding: 0 10px; background: var(--accent); border: 1px solid var(--accent2); border-radius: var(--radius); color: #fff; font-size: 11.5px; font-weight: 500; cursor: pointer; font-family: inherit; }
+.toast-close { flex-shrink: 0; background: none; border: none; color: var(--text3); cursor: pointer; font-size: 15px; line-height: 1; padding: 0 2px; font-family: inherit; }
+.toast-close:hover { color: var(--text); }

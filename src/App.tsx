@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase, dateKey, formatDate } from './lib/supabase'
+import { useToast } from './components/ToastProvider'
 import AuthPage from './components/AuthPage'
 import SettingsModal from './components/SettingsModal'
 import AboutDialog from './components/AboutDialog'
@@ -17,11 +18,13 @@ const TAB_LABEL: Record<Tab, string> = {
 }
 
 export default function App() {
+  const { showToast } = useToast()
   const [session, setSession] = useState<Session | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [tab, setTab] = useState<Tab>('tracker')
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [aboutOpen, setAboutOpen] = useState(false)
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false)
   const [kcalGoal, setKcalGoal] = useState<number | null>(null)
   const [logRefreshKey, setLogRefreshKey] = useState(0)
 
@@ -55,6 +58,22 @@ export default function App() {
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
+  // Notify when a newly deployed service worker takes over an already-open tab
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return
+    const hadController = !!navigator.serviceWorker.controller
+    function onControllerChange() {
+      if (hadController) {
+        showToast('Neue Version verfügbar.', {
+          persist: true,
+          action: { label: 'Neu laden', onClick: () => window.location.reload() },
+        })
+      }
+    }
+    navigator.serviceWorker.addEventListener('controllerchange', onControllerChange)
+    return () => navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange)
+  }, [showToast])
+
   async function loadSettings(userId: string) {
     const { data } = await supabase
       .from('user_settings')
@@ -66,11 +85,12 @@ export default function App() {
 
   async function saveSettings(goal: number | null) {
     if (!session) return
-    await supabase.from('user_settings').upsert({
+    const { error } = await supabase.from('user_settings').upsert({
       user_id: session.user.id,
       kcal_goal: goal,
       updated_at: new Date().toISOString(),
     })
+    if (error) { showToast('Fehler beim Speichern. Bitte Internetverbindung prüfen.', { type: 'error' }); return }
     setKcalGoal(goal)
     setSettingsOpen(false)
   }
@@ -80,10 +100,15 @@ export default function App() {
     setTab('tracker')
   }
 
-  async function handleClose() {
-    if (confirm('KaLoMa schließen und abmelden?')) {
-      await supabase.auth.signOut()
-    }
+  function handleClose() {
+    setOpenMenu(null)
+    setLogoutConfirmOpen(true)
+  }
+
+  async function confirmLogout() {
+    setLogoutConfirmOpen(false)
+    const { error } = await supabase.auth.signOut()
+    if (error) showToast('Abmelden fehlgeschlagen. Bitte Internetverbindung prüfen.', { type: 'error' })
   }
 
   function goTo(t: Tab) {
@@ -189,6 +214,17 @@ export default function App() {
         <SettingsModal current={kcalGoal} onSave={saveSettings} onClose={() => setSettingsOpen(false)} />
       )}
       {aboutOpen && <AboutDialog onClose={() => setAboutOpen(false)} />}
+      {logoutConfirmOpen && (
+        <div className="modal-overlay open" onClick={e => e.target === e.currentTarget && setLogoutConfirmOpen(false)}>
+          <div className="modal">
+            <h3>KaLoMa schließen und abmelden?</h3>
+            <div className="modal-btns">
+              <button className="btn" onClick={() => setLogoutConfirmOpen(false)}>Abbrechen</button>
+              <button className="btn btn-primary" onClick={confirmLogout}>Abmelden</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

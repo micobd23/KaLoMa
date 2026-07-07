@@ -2,8 +2,10 @@ import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react
 import { supabase, r, kj } from '../lib/supabase'
 import type { FoodItem } from '../lib/supabase'
 import ItemModal from '../components/ItemModal'
+import { useToast } from '../components/ToastProvider'
 
 const BarcodeScanner = lazy(() => import('../components/BarcodeScanner'))
+const SAVE_ERROR = 'Fehler beim Speichern. Bitte Internetverbindung prüfen.'
 
 interface Props {
   userId: string
@@ -16,6 +18,7 @@ type DbItem = FoodItem & { id: string; category?: string | null }
 type SortKey = 'name' | 'kcal' | 'category'
 
 export default function DatabasePage({ userId, meal, currentDate, onLogUpdate }: Props) {
+  const { showToast } = useToast()
   const [db, setDb] = useState<DbItem[]>([])
   const [loading, setLoading] = useState(true)
   const [name, setName] = useState('')
@@ -51,7 +54,7 @@ export default function DatabasePage({ userId, meal, currentDate, onLogUpdate }:
 
   async function addItem() {
     if (!name.trim()) return
-    await supabase.from('food_db').insert({
+    const { error } = await supabase.from('food_db').insert({
       user_id: userId,
       name: name.trim(),
       category: category.trim() || null,
@@ -60,6 +63,7 @@ export default function DatabasePage({ userId, meal, currentDate, onLogUpdate }:
       carbs: parseFloat(carbs) || 0,
       fat: parseFloat(fat) || 0,
     })
+    if (error) { showToast(SAVE_ERROR, { type: 'error' }); return }
     setName(''); setCategory(''); setKcal(''); setProtein(''); setCarbs(''); setFat('')
     fetchDb()
   }
@@ -70,7 +74,7 @@ export default function DatabasePage({ userId, meal, currentDate, onLogUpdate }:
       const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`)
       const data = await res.json()
       if (data.status !== 1 || !data.product) {
-        alert(`Barcode ${barcode} nicht in Open Food Facts gefunden. Du kannst das Produkt manuell eintragen.`)
+        showToast(`Barcode ${barcode} nicht in Open Food Facts gefunden. Du kannst das Produkt manuell eintragen.`, { type: 'error' })
         return
       }
       const p = data.product
@@ -83,28 +87,31 @@ export default function DatabasePage({ userId, meal, currentDate, onLogUpdate }:
         fat: r(nm['fat_100g'] ?? 0),
       }
       if (!item.name) {
-        alert('Produkt hat keinen Namen bei Open Food Facts. Bitte manuell eintragen.')
+        showToast('Produkt hat keinen Namen bei Open Food Facts. Bitte manuell eintragen.', { type: 'error' })
         return
       }
       if (db.some(i => i.name.toLowerCase() === item.name.toLowerCase())) {
-        alert(`"${item.name}" ist schon in deiner Datenbank.`)
+        showToast(`"${item.name}" ist schon in deiner Datenbank.`, { type: 'error' })
         return
       }
-      await supabase.from('food_db').insert({ user_id: userId, ...item })
+      const { error } = await supabase.from('food_db').insert({ user_id: userId, ...item })
+      if (error) { showToast(SAVE_ERROR, { type: 'error' }); return }
       fetchDb()
     } catch {
-      alert('Fehler beim Laden des Produkts. Bitte Internetverbindung prüfen.')
+      showToast('Fehler beim Laden des Produkts. Bitte Internetverbindung prüfen.', { type: 'error' })
     }
   }
 
   async function deleteItem(id: string) {
-    await supabase.from('food_db').delete().eq('id', id)
+    const { error } = await supabase.from('food_db').delete().eq('id', id)
+    if (error) { showToast(SAVE_ERROR, { type: 'error' }); return }
     setDb(prev => prev.filter(i => i.id !== id))
   }
 
   async function confirmAdd(item: FoodItem, amount: number) {
+    if (amount <= 0) { showToast('Bitte eine Menge größer als 0 eingeben.', { type: 'error' }); return }
     const fac = amount / 100
-    await supabase.from('food_log').insert({
+    const { error } = await supabase.from('food_log').insert({
       user_id: userId,
       date: currentDate,
       meal,
@@ -115,6 +122,7 @@ export default function DatabasePage({ userId, meal, currentDate, onLogUpdate }:
       carbs: item.carbs * fac,
       fat: item.fat * fac,
     })
+    if (error) { showToast(SAVE_ERROR, { type: 'error' }); return }
     setPendingItem(null)
     onLogUpdate()
   }

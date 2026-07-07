@@ -2,8 +2,10 @@ import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } fro
 import { supabase, MEALS, r, kj, dateKey, formatDate } from '../lib/supabase'
 import type { FoodItem, LogEntry, MealKey } from '../lib/supabase'
 import ItemModal from '../components/ItemModal'
+import { useToast } from '../components/ToastProvider'
 
 const BarcodeScanner = lazy(() => import('../components/BarcodeScanner'))
+const SAVE_ERROR = 'Fehler beim Speichern. Bitte Internetverbindung prüfen.'
 
 interface Props {
   userId: string
@@ -17,6 +19,7 @@ interface PendingItem { item: FoodItem; fromOFF: boolean }
 interface SugItem extends FoodItem { source: 'off'; brand?: string }
 
 export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Props) {
+  const { showToast } = useToast()
   const [log, setLog] = useState<LogEntry[]>([])
   const [logLoading, setLogLoading] = useState(true)
   const [foodDb, setFoodDb] = useState<(FoodItem & { id: string })[]>([])
@@ -118,7 +121,7 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
     const exists = foodDb.some(i => i.name.toLowerCase() === item.name.toLowerCase())
     if (!exists) {
       supabase.from('food_db').insert({ user_id: userId, name: item.name, kcal: item.kcal, protein: item.protein, carbs: item.carbs, fat: item.fat })
-        .then(() => fetchFoodDb())
+        .then(({ error }) => { if (error) showToast(SAVE_ERROR, { type: 'error' }); else fetchFoodDb() })
     }
   }
 
@@ -144,23 +147,27 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
 
   async function addToLog() {
     if (!query.trim()) return
-    await supabase.from('food_log').insert({
+    const amt = parseFloat(amount) || 0
+    if (amt <= 0) { showToast('Bitte eine Menge größer als 0 eingeben.', { type: 'error' }); return }
+    const { error } = await supabase.from('food_log').insert({
       user_id: userId,
       date: dateKey(date),
       meal,
       name: query.trim(),
-      amount: parseFloat(amount) || 0,
+      amount: amt,
       kcal: parseFloat(kcalInput) || 0,
       protein: parseFloat(proteinInput) || 0,
       carbs: parseFloat(carbsInput) || 0,
       fat: parseFloat(fatInput) || 0,
     })
+    if (error) { showToast(SAVE_ERROR, { type: 'error' }); return }
     setQuery(''); setAmount('100'); setKcalInput(''); setProteinInput(''); setCarbsInput(''); setFatInput(''); setSelectedBase(null)
     fetchLog()
   }
 
   async function deleteEntry(id: string) {
-    await supabase.from('food_log').delete().eq('id', id)
+    const { error } = await supabase.from('food_log').delete().eq('id', id)
+    if (error) { showToast(SAVE_ERROR, { type: 'error' }); return }
     setLog(prev => prev.filter(e => e.id !== id))
   }
 
@@ -183,30 +190,33 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
           }
         })
       } else {
-        alert(`Barcode ${barcode} nicht in Open Food Facts gefunden. Du kannst das Produkt manuell eintragen.`)
+        showToast(`Barcode ${barcode} nicht in Open Food Facts gefunden. Du kannst das Produkt manuell eintragen.`, { type: 'error' })
       }
     } catch {
-      alert('Fehler beim Laden des Produkts. Bitte Internetverbindung prüfen.')
+      showToast('Fehler beim Laden des Produkts. Bitte Internetverbindung prüfen.', { type: 'error' })
     }
   }
 
   async function confirmItemModal(amount: number, saveToDb: boolean) {
     if (!pendingItem) return
+    if (amount <= 0) { showToast('Bitte eine Menge größer als 0 eingeben.', { type: 'error' }); return }
     const { item } = pendingItem
     const fac = amount / 100
     if (saveToDb) {
       const exists = foodDb.some(i => i.name.toLowerCase() === item.name.toLowerCase())
       if (!exists) {
-        await supabase.from('food_db').insert({ user_id: userId, name: item.name, kcal: item.kcal, protein: item.protein, carbs: item.carbs, fat: item.fat })
+        const { error } = await supabase.from('food_db').insert({ user_id: userId, name: item.name, kcal: item.kcal, protein: item.protein, carbs: item.carbs, fat: item.fat })
+        if (error) { showToast(SAVE_ERROR, { type: 'error' }); return }
         fetchFoodDb()
       }
     }
-    await supabase.from('food_log').insert({
+    const { error } = await supabase.from('food_log').insert({
       user_id: userId, date: dateKey(date), meal,
       name: item.name, amount,
       kcal: item.kcal * fac, protein: item.protein * fac,
       carbs: item.carbs * fac, fat: item.fat * fac,
     })
+    if (error) { showToast(SAVE_ERROR, { type: 'error' }); return }
     setPendingItem(null)
     fetchLog()
   }
