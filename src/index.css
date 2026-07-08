@@ -155,7 +155,10 @@ input[type="text"], input[type="number"], input[type="email"], input[type="passw
 }
 input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(53,104,196,.18); }
 input::placeholder { color: var(--text3); }
+input[type="number"] { -moz-appearance: textfield; }
+input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .field label { display: block; font-size: 10.5px; color: var(--text2); margin-bottom: 3px; font-weight: 600; }
+.form-row .field label { min-height: 2.6em; display: flex; align-items: flex-end; }
 
 .btn {
   height: 32px; padding: 0 16px;
@@ -237,7 +240,7 @@ input::placeholder { color: var(--text3); }
 .db-list-row.selected .db-list-name { color: #fff; }
 .db-list-row.selected .db-list-kcal { color: #dce6f7; }
 
-.form-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 6px; margin-bottom: 8px; }
+.form-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 8px; }
 @media (max-width: 560px) { .form-row { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 720px) { .tracker-grid .form-row { grid-template-columns: 1fr 1fr; } }
 
