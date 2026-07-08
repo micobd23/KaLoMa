@@ -40,6 +40,7 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
   const [offLoading, setOffLoading] = useState(false)
   const offTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
   const searchWrapRef = useRef<HTMLDivElement>(null)
+  const skipNextSearchRef = useRef(false)
 
   // Modals
   const [scannerOpen, setScannerOpen] = useState(false)
@@ -83,6 +84,7 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
   // Open Food Facts search (external results only — local matches are always visible in the list above)
   useEffect(() => {
     clearTimeout(offTimerRef.current)
+    if (skipNextSearchRef.current) { skipNextSearchRef.current = false; return }
     if (query.trim().length < 2) { setSuggestions([]); setShowSuggestions(false); return }
     setShowSuggestions(true)
     offTimerRef.current = setTimeout(() => searchOFF(query), 500)
@@ -113,9 +115,11 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
   }
 
   function selectSuggestion(item: SugItem) {
+    skipNextSearchRef.current = true
     setQuery(item.name)
     setSelectedBase(item)
     setShowSuggestions(false)
+    setSuggestions([])
     applyBase(item, parseFloat(amount) || 0)
     // Auto-save OFF items to local DB
     const exists = foodDb.some(i => i.name.toLowerCase() === item.name.toLowerCase())
@@ -126,9 +130,11 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
   }
 
   function selectFromDb(item: FoodItem & { id: string }) {
+    skipNextSearchRef.current = true
     setQuery(item.name)
     setSelectedBase(item)
     setShowSuggestions(false)
+    setSuggestions([])
     applyBase(item, parseFloat(amount) || 0)
   }
 

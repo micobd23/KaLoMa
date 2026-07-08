@@ -253,12 +253,13 @@ input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-i
 .grid-row:last-child { border-bottom: none; }
 .grid-row:nth-child(even) { background: var(--grid-stripe); }
 .grid-row:hover { background: var(--bg4); }
+.grid-row.editable { cursor: pointer; }
+.grid-row.editing, .grid-row.editing:nth-child(even) { background: var(--bg4); box-shadow: inset 3px 0 0 var(--accent); }
 .grid-col-name { flex: 1; min-width: 0; }
 .grid-col-name span, .grid-name-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
 .grid-col-m { width: 56px; text-align: right; flex-shrink: 0; }
 .grid-col-k { width: 62px; text-align: right; flex-shrink: 0; font-weight: 600; color: var(--accent2); }
 .grid-col-del { width: 30px; flex-shrink: 0; text-align: center; padding: 0 !important; }
-.grid-col-add { width: 74px; flex-shrink: 0; padding: 4px !important; }
 @media (max-width: 720px) { .hide-sm { display: none !important; } }
 @media (max-width: 480px) {
   .grid-head span, .grid-row span, .summary-row span { padding: 5px 4px; }
@@ -277,8 +278,8 @@ input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-i
 .empty { color: var(--text3); font-size: 12.5px; padding: 1.25rem 0; text-align: center; }
 .loading-msg { color: var(--text3); font-size: 12.5px; padding: .65rem 0; text-align: center; }
 
-.db-add-btn { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 3px 8px; font-size: 11px; font-weight: 500; color: var(--text2); cursor: pointer; font-family: inherit; width: 100%; }
-.db-add-btn:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+.db-add-btn { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 16px; line-height: 1; width: 100%; height: 100%; min-height: 26px; display: flex; align-items: center; justify-content: center; font-family: inherit; }
+.db-add-btn:hover { color: var(--accent); }
 
 /* ---------- Summary table (Summen) ---------- */
 .summary-table { border: 1px solid var(--border2); border-radius: var(--radius); overflow: hidden; margin-top: 10px; }
