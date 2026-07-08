@@ -257,6 +257,12 @@ input::placeholder { color: var(--text3); }
 .grid-col-del { width: 30px; flex-shrink: 0; text-align: center; padding: 0 !important; }
 .grid-col-add { width: 74px; flex-shrink: 0; padding: 4px !important; }
 @media (max-width: 720px) { .hide-sm { display: none !important; } }
+@media (max-width: 480px) {
+  .grid-head span, .grid-row span, .summary-row span { padding: 5px 4px; }
+  .grid-col-m { width: 38px; }
+  .grid-col-k { width: 48px; }
+  .grid-head, .grid-row, .summary-row { font-size: 11px; }
+}
 
 .meal-group-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 0 4px; font-size: 10.5px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: .06em; }
 .meal-group-header + .grid-table { margin-top: 0; }

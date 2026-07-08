@@ -368,6 +368,9 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
                 <div className="grid-table">
                   <div className="grid-head">
                     <span className="grid-col-name">Lebensmittel</span>
+                    <span className="grid-col-m">Prot.</span>
+                    <span className="grid-col-m">Kh.</span>
+                    <span className="grid-col-m">Fett</span>
                     <span className="grid-col-m hide-sm">kJ</span>
                     <span className="grid-col-k">kcal</span>
                     <span className="grid-col-del" />
@@ -379,6 +382,9 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
                           {entry.name}{entry.amount !== 100 && ` (${Math.round(entry.amount)}g)`}
                         </span>
                       </span>
+                      <span className="grid-col-m">{r(entry.protein)}</span>
+                      <span className="grid-col-m">{r(entry.carbs)}</span>
+                      <span className="grid-col-m">{r(entry.fat)}</span>
                       <span className="grid-col-m hide-sm">{kj(entry.kcal)}</span>
                       <span className="grid-col-k">{Math.round(entry.kcal)}</span>
                       <span className="grid-col-del"><button className="del-btn" onClick={() => deleteEntry(entry.id)}>×</button></span>
@@ -392,11 +398,11 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
               <div className="summary-table">
                 <div className="summary-row head">
                   <span className="grid-col-name">Summen</span>
-                  <span className="grid-col-k">kcal</span>
-                  <span className="grid-col-m hide-sm">kJ</span>
                   <span className="grid-col-m">Prot.</span>
                   <span className="grid-col-m">Kh.</span>
                   <span className="grid-col-m">Fett</span>
+                  <span className="grid-col-m hide-sm">kJ</span>
+                  <span className="grid-col-k">kcal</span>
                 </div>
                 {grouped.map(g => {
                   const s = g.entries.reduce((acc, e) => ({
@@ -405,21 +411,21 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
                   return (
                     <div className="summary-row" key={g.key}>
                       <span className="grid-col-name"><span className="grid-name-text">{g.label}</span></span>
-                      <span className="grid-col-k">{Math.round(s.kcal)}</span>
-                      <span className="grid-col-m hide-sm">{kj(s.kcal)}</span>
                       <span className="grid-col-m">{r(s.protein)}</span>
                       <span className="grid-col-m">{r(s.carbs)}</span>
                       <span className="grid-col-m">{r(s.fat)}</span>
+                      <span className="grid-col-m hide-sm">{kj(s.kcal)}</span>
+                      <span className="grid-col-k">{Math.round(s.kcal)}</span>
                     </div>
                   )
                 })}
                 <div className="summary-row total">
                   <span className="grid-col-name"><span className="grid-name-text">Tagessumme</span></span>
-                  <span className="grid-col-k">{Math.round(totals.kcal)}</span>
-                  <span className="grid-col-m hide-sm">{kj(totals.kcal)}</span>
                   <span className="grid-col-m">{r(totals.protein)}</span>
                   <span className="grid-col-m">{r(totals.carbs)}</span>
                   <span className="grid-col-m">{r(totals.fat)}</span>
+                  <span className="grid-col-m hide-sm">{kj(totals.kcal)}</span>
+                  <span className="grid-col-k">{Math.round(totals.kcal)}</span>
                 </div>
               </div>
             )}
