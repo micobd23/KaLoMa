@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from 'react'
-import { supabase, MEALS, r, kj, dateKey, formatDate } from '../lib/supabase'
+import { supabase, MEALS, r, kj, dateKey, formatDate, decimalInput } from '../lib/supabase'
 import type { FoodItem, LogEntry, MealKey } from '../lib/supabase'
 import ItemModal from '../components/ItemModal'
 import { useToast } from '../components/ToastProvider'
@@ -336,12 +336,12 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
               <div className="form-row">
                 <div className="field">
                   <label>Menge</label>
-                  <input type="number" value={amount} min={0} onChange={e => handleAmountChange(e.target.value)} />
+                  <input type="text" inputMode="decimal" value={amount} onChange={e => handleAmountChange(decimalInput(e.target.value))} />
                 </div>
-                <div className="field"><label>kcal</label><input type="number" value={kcalInput} onChange={e => setKcalInput(e.target.value)} placeholder="0" min={0} /></div>
-                <div className="field"><label>Protein</label><input type="number" value={proteinInput} onChange={e => setProteinInput(e.target.value)} placeholder="0" min={0} /></div>
-                <div className="field"><label>KH</label><input type="number" value={carbsInput} onChange={e => setCarbsInput(e.target.value)} placeholder="0" min={0} /></div>
-                <div className="field"><label>Fett</label><input type="number" value={fatInput} onChange={e => setFatInput(e.target.value)} placeholder="0" min={0} /></div>
+                <div className="field"><label>kcal</label><input type="text" inputMode="decimal" value={kcalInput} onChange={e => setKcalInput(decimalInput(e.target.value))} placeholder="0" /></div>
+                <div className="field"><label>Protein</label><input type="text" inputMode="decimal" value={proteinInput} onChange={e => setProteinInput(decimalInput(e.target.value))} placeholder="0" /></div>
+                <div className="field"><label>KH</label><input type="text" inputMode="decimal" value={carbsInput} onChange={e => setCarbsInput(decimalInput(e.target.value))} placeholder="0" /></div>
+                <div className="field"><label>Fett</label><input type="text" inputMode="decimal" value={fatInput} onChange={e => setFatInput(decimalInput(e.target.value))} placeholder="0" /></div>
               </div>
               <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 8, minHeight: 16 }}>
                 {kcalInput && `→ ${kj(parseFloat(kcalInput) || 0)} kJ`}

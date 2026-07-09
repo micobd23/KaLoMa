@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react'
-import { supabase, r, kj } from '../lib/supabase'
+import { supabase, r, kj, decimalInput } from '../lib/supabase'
 import type { FoodItem } from '../lib/supabase'
 import ItemModal from '../components/ItemModal'
 import { useToast } from '../components/ToastProvider'
@@ -161,14 +161,14 @@ export default function DatabasePage({ userId, meal, currentDate, onLogUpdate }:
             <label>Name</label>
             <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="z.B. Haferflocken" onKeyDown={e => e.key === 'Enter' && saveItem()} />
           </div>
-          <div className="field"><label>kcal</label><input type="number" value={kcal} onChange={e => setKcal(e.target.value)} placeholder="0" min={0} /></div>
-          <div className="field"><label>Protein (g)</label><input type="number" value={protein} onChange={e => setProtein(e.target.value)} placeholder="0" min={0} /></div>
-          <div className="field"><label>Kohlen. (g)</label><input type="number" value={carbs} onChange={e => setCarbs(e.target.value)} placeholder="0" min={0} /></div>
+          <div className="field"><label>kcal</label><input type="text" inputMode="decimal" value={kcal} onChange={e => setKcal(decimalInput(e.target.value))} placeholder="0" /></div>
+          <div className="field"><label>Protein (g)</label><input type="text" inputMode="decimal" value={protein} onChange={e => setProtein(decimalInput(e.target.value))} placeholder="0" /></div>
+          <div className="field"><label>Kohlen. (g)</label><input type="text" inputMode="decimal" value={carbs} onChange={e => setCarbs(decimalInput(e.target.value))} placeholder="0" /></div>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', marginTop: 4, flexWrap: 'wrap' }}>
           <div className="field" style={{ width: 100 }}>
             <label>Fett (g)</label>
-            <input type="number" value={fat} onChange={e => setFat(e.target.value)} placeholder="0" min={0} />
+            <input type="text" inputMode="decimal" value={fat} onChange={e => setFat(decimalInput(e.target.value))} placeholder="0" />
           </div>
           <div className="field" style={{ width: 160 }}>
             <label>Rubrik (optional)</label>

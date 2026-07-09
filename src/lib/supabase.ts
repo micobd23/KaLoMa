@@ -44,6 +44,7 @@ export const MEALS = [
 export type MealKey = typeof MEALS[number]['key']
 
 export function r(v: number) { return Math.round(v * 10) / 10 }
+export function decimalInput(v: string) { return v.replace(',', '.') }
 export function kj(kcal: number) { return Math.round(kcal * 4.184) }
 export function be(carbs: number) { return Math.round((carbs / 12) * 100) / 100 }
 export function dateKey(d: Date) { return d.toISOString().split('T')[0] }

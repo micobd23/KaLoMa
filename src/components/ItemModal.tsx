@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { r } from './../lib/supabase'
+import { r, decimalInput } from './../lib/supabase'
 import type { FoodItem } from '../lib/supabase'
 
 interface Props {
@@ -29,10 +29,10 @@ export default function ItemModal({ item, fromOFF, onConfirm, onClose }: Props) 
           <div className="field" style={{ flex: 1 }}>
             <label>Menge</label>
             <input
-              type="number"
+              type="text"
+              inputMode="decimal"
               value={amount}
-              min={0}
-              onChange={e => setAmount(e.target.value)}
+              onChange={e => setAmount(decimalInput(e.target.value))}
               autoFocus
             />
           </div>
