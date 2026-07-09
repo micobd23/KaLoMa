@@ -335,7 +335,7 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
             <form onSubmit={e => { e.preventDefault(); addToLog() }}>
               <div className="form-row">
                 <div className="field">
-                  <label>Menge (g)</label>
+                  <label>Menge</label>
                   <input type="number" value={amount} min={0} onChange={e => handleAmountChange(e.target.value)} />
                 </div>
                 <div className="field"><label>kcal</label><input type="number" value={kcalInput} onChange={e => setKcalInput(e.target.value)} placeholder="0" min={0} /></div>
@@ -411,6 +411,7 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
                   <span className="grid-col-m">Fett</span>
                   <span className="grid-col-m hide-sm">kJ</span>
                   <span className="grid-col-k">kcal</span>
+                  <span className="grid-col-del" />
                 </div>
                 {grouped.map(g => {
                   const s = g.entries.reduce((acc, e) => ({
@@ -424,6 +425,7 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
                       <span className="grid-col-m">{r(s.fat)}</span>
                       <span className="grid-col-m hide-sm">{kj(s.kcal)}</span>
                       <span className="grid-col-k">{Math.round(s.kcal)}</span>
+                      <span className="grid-col-del" />
                     </div>
                   )
                 })}
@@ -434,6 +436,7 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
                   <span className="grid-col-m">{r(totals.fat)}</span>
                   <span className="grid-col-m hide-sm">{kj(totals.kcal)}</span>
                   <span className="grid-col-k">{Math.round(totals.kcal)}</span>
+                  <span className="grid-col-del" />
                 </div>
               </div>
             )}
