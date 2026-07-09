@@ -144,6 +144,7 @@ body {
 main { width: 100%; padding: 1rem; padding-bottom: 2rem; flex: 1; }
 
 .card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: .85rem 1rem; margin-bottom: 1rem; }
+.card-tinted { background: linear-gradient(180deg, #eef3fb 0%, #e7eefa 100%); border-color: #c3d3ec; }
 .section-heading { font-size: 11px; font-weight: 700; color: var(--text2); margin-bottom: 6px; margin-top: .25rem; }
 
 input[type="text"], input[type="number"], input[type="email"], input[type="password"], select {

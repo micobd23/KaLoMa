@@ -332,27 +332,29 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
               </div>
             </div>
 
-            <div className="form-row">
-              <div className="field">
-                <label>Menge (g)</label>
-                <input type="number" value={amount} min={0} onChange={e => handleAmountChange(e.target.value)} />
+            <form onSubmit={e => { e.preventDefault(); addToLog() }}>
+              <div className="form-row">
+                <div className="field">
+                  <label>Menge (g)</label>
+                  <input type="number" value={amount} min={0} onChange={e => handleAmountChange(e.target.value)} />
+                </div>
+                <div className="field"><label>kcal</label><input type="number" value={kcalInput} onChange={e => setKcalInput(e.target.value)} placeholder="0" min={0} /></div>
+                <div className="field"><label>Protein</label><input type="number" value={proteinInput} onChange={e => setProteinInput(e.target.value)} placeholder="0" min={0} /></div>
+                <div className="field"><label>KH</label><input type="number" value={carbsInput} onChange={e => setCarbsInput(e.target.value)} placeholder="0" min={0} /></div>
+                <div className="field"><label>Fett</label><input type="number" value={fatInput} onChange={e => setFatInput(e.target.value)} placeholder="0" min={0} /></div>
               </div>
-              <div className="field"><label>kcal</label><input type="number" value={kcalInput} onChange={e => setKcalInput(e.target.value)} placeholder="0" min={0} /></div>
-              <div className="field"><label>Protein (g)</label><input type="number" value={proteinInput} onChange={e => setProteinInput(e.target.value)} placeholder="0" min={0} /></div>
-              <div className="field"><label>Kohlen. (g)</label><input type="number" value={carbsInput} onChange={e => setCarbsInput(e.target.value)} placeholder="0" min={0} /></div>
-              <div className="field"><label>Fett (g)</label><input type="number" value={fatInput} onChange={e => setFatInput(e.target.value)} placeholder="0" min={0} /></div>
-            </div>
-            <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 8, minHeight: 16 }}>
-              {kcalInput && `→ ${kj(parseFloat(kcalInput) || 0)} kJ`}
-            </div>
-            <button className="btn btn-primary" onClick={addToLog}>Übernehmen</button>
+              <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 8, minHeight: 16 }}>
+                {kcalInput && `→ ${kj(parseFloat(kcalInput) || 0)} kJ`}
+              </div>
+              <button type="submit" className="btn btn-primary">Übernehmen</button>
+            </form>
           </div>
         </div>
 
         {/* Right: Berechnungstag */}
         <div>
           <div className="section-heading">Berechnungstag</div>
-          <div className="card">
+          <div className="card card-tinted">
             <div className="meal-selector">
               {MEALS.map(m => (
                 <button key={m.key} className={`meal-btn${meal === m.key ? ' active' : ''}`} onClick={() => setMeal(m.key)}>
