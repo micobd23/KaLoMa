@@ -469,7 +469,7 @@ export default function TrackerPage({ userId, goals, date, onDateChange }: Props
                           onClick={() => setEditingEntry(entry)}
                         >✏️</button>
                         <span className="grid-name-text">
-                          {entry.name}{entry.amount !== 100 && ` (${Math.round(entry.amount)}g)`}
+                          {entry.name} ({Math.round(entry.amount)}g)
                         </span>
                       </span>
                       <span className="grid-col-m">{r(entry.protein)}</span>
