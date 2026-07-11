@@ -353,6 +353,14 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
               <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 8, minHeight: 16 }}>
                 {kcalInput && `→ ${kj(parseFloat(kcalInput) || 0)} kJ`}
               </div>
+              <label style={{ display: 'block', fontSize: 10.5, color: 'var(--text2)', marginBottom: 4, fontWeight: 600 }}>Mahlzeit</label>
+              <div className="meal-selector">
+                {MEALS.map(m => (
+                  <button key={m.key} type="button" className={`meal-btn${meal === m.key ? ' active' : ''}`} onClick={() => setMeal(m.key)}>
+                    {m.label}
+                  </button>
+                ))}
+              </div>
               <button type="submit" className="btn btn-primary">Übernehmen</button>
             </form>
           </div>
@@ -362,14 +370,6 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
         <div>
           <div className="section-heading">Berechnungstag</div>
           <div className="card card-tinted">
-            <div className="meal-selector">
-              {MEALS.map(m => (
-                <button key={m.key} className={`meal-btn${meal === m.key ? ' active' : ''}`} onClick={() => setMeal(m.key)}>
-                  {m.label}
-                </button>
-              ))}
-            </div>
-
             {logLoading ? (
               <p className="loading-msg">Lädt…</p>
             ) : !log.length ? (
