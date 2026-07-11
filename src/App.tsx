@@ -174,10 +174,10 @@ export default function App() {
           </div>
 
           <div className="tool-bar">
-            <button className={`tool-btn${tab === 'tracker' ? ' active' : ''}`} title="Tageslog" aria-label="Tageslog" onClick={() => setTab('tracker')}>📝</button>
-            <button className={`tool-btn${tab === 'stats' ? ' active' : ''}`} title="Statistik" aria-label="Statistik" onClick={() => setTab('stats')}>📊</button>
-            <button className={`tool-btn${tab === 'db' ? ' active' : ''}`} title="Kalorientabelle" aria-label="Kalorientabelle" onClick={() => setTab('db')}>🗂</button>
-            <div className="tool-sep" />
+            <button className={`tool-btn tool-tab${tab === 'tracker' ? ' active' : ''}`} title="Tageslog" aria-label="Tageslog" onClick={() => setTab('tracker')}>📝</button>
+            <button className={`tool-btn tool-tab${tab === 'stats' ? ' active' : ''}`} title="Statistik" aria-label="Statistik" onClick={() => setTab('stats')}>📊</button>
+            <button className={`tool-btn tool-tab${tab === 'db' ? ' active' : ''}`} title="Kalorientabelle" aria-label="Kalorientabelle" onClick={() => setTab('db')}>🗂</button>
+            <div className="tool-sep tool-tab" />
             <button className="tool-btn" title="Einstellungen" aria-label="Einstellungen" onClick={() => setSettingsOpen(true)}>⚙</button>
             <button className="tool-btn" title="Über KaLoMa" aria-label="Über KaLoMa" onClick={() => setAboutOpen(true)}>❓</button>
           </div>
@@ -211,6 +211,18 @@ export default function App() {
             <span className="status-flex" />
             <span>Ziel: {kcalGoal ? 'AN' : 'AUS'}</span>
           </div>
+
+          <nav className="bottom-nav">
+            <button className={tab === 'tracker' ? 'active' : ''} onClick={() => setTab('tracker')}>
+              <span className="bn-icon">📝</span><span className="bn-label">Tageslog</span>
+            </button>
+            <button className={tab === 'stats' ? 'active' : ''} onClick={() => setTab('stats')}>
+              <span className="bn-icon">📊</span><span className="bn-label">Statistik</span>
+            </button>
+            <button className={tab === 'db' ? 'active' : ''} onClick={() => setTab('db')}>
+              <span className="bn-icon">🗂</span><span className="bn-label">Tabelle</span>
+            </button>
+          </nav>
         </>
       )}
 

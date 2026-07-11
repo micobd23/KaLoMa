@@ -47,6 +47,7 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
   // Modals
   const [scannerOpen, setScannerOpen] = useState(false)
   const [pendingItem, setPendingItem] = useState<PendingItem | null>(null)
+  const [editingEntry, setEditingEntry] = useState<LogEntry | null>(null)
 
   const fetchLog = useCallback(async () => {
     setLogLoading(true)
@@ -179,6 +180,45 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
     const { error } = await supabase.from('food_log').delete().eq('id', id)
     if (error) { showToast(SAVE_ERROR, { type: 'error' }); return }
     setLog(prev => prev.filter(e => e.id !== id))
+  }
+
+  // Derive the per-100g values of an existing log entry so its amount can be re-scaled.
+  function entryBase(e: LogEntry): FoodItem {
+    const f = e.amount > 0 ? e.amount / 100 : 1
+    return { name: e.name, kcal: e.kcal / f, protein: e.protein / f, carbs: e.carbs / f, fat: e.fat / f }
+  }
+
+  async function saveEntryEdit(newAmount: number, _saveToDb: boolean, newMeal: MealKey) {
+    if (!editingEntry) return
+    if (newAmount <= 0) { showToast('Bitte eine Menge größer als 0 eingeben.', { type: 'error' }); return }
+    const base = entryBase(editingEntry)
+    const fac = newAmount / 100
+    const { error } = await supabase.from('food_log').update({
+      amount: newAmount, meal: newMeal,
+      kcal: base.kcal * fac, protein: base.protein * fac, carbs: base.carbs * fac, fat: base.fat * fac,
+    }).eq('id', editingEntry.id)
+    if (error) { showToast(SAVE_ERROR, { type: 'error' }); return }
+    setEditingEntry(null)
+    fetchLog()
+  }
+
+  // Copy all of the previous day's entries into the currently viewed (empty) day.
+  async function copyPreviousDay() {
+    const prev = new Date(date.getTime() - 86400000)
+    const { data, error } = await supabase
+      .from('food_log').select('*')
+      .eq('user_id', userId).eq('date', dateKey(prev)).order('created_at')
+    if (error) { showToast(LOAD_ERROR, { type: 'error' }); return }
+    const prevEntries = (data as LogEntry[]) ?? []
+    if (!prevEntries.length) { showToast('Am Vortag gibt es keine Einträge zum Kopieren.', { type: 'error' }); return }
+    const rows = prevEntries.map(e => ({
+      user_id: userId, date: dateKey(date), meal: e.meal, name: e.name,
+      amount: e.amount, kcal: e.kcal, protein: e.protein, carbs: e.carbs, fat: e.fat,
+    }))
+    const { error: insErr } = await supabase.from('food_log').insert(rows)
+    if (insErr) { showToast(SAVE_ERROR, { type: 'error' }); return }
+    showToast(`${rows.length} Einträge vom Vortag übernommen.`)
+    fetchLog()
   }
 
   async function handleBarcodeScan(barcode: string) {
@@ -373,7 +413,10 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
             {logLoading ? (
               <p className="loading-msg">Lädt…</p>
             ) : !log.length ? (
-              <p className="empty">Noch keine Einträge für diesen Tag.</p>
+              <div className="empty">
+                <p style={{ marginBottom: 10 }}>Noch keine Einträge für diesen Tag.</p>
+                <button type="button" className="btn" onClick={copyPreviousDay}>📋 Vortag kopieren</button>
+              </div>
             ) : grouped.map(group => (
               <div key={group.key} className="meal-group-block">
                 <div className="meal-group-header">
@@ -393,7 +436,14 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
                   {group.entries.map(entry => (
                     <div key={entry.id} className="grid-row">
                       <span className="grid-col-name">
-                        <span className="grid-name-text">
+                        <span
+                          className="grid-name-text grid-name-edit"
+                          role="button"
+                          tabIndex={0}
+                          title="Zum Bearbeiten anklicken"
+                          onClick={() => setEditingEntry(entry)}
+                          onKeyDown={onActivate(() => setEditingEntry(entry))}
+                        >
                           {entry.name}{entry.amount !== 100 && ` (${Math.round(entry.amount)}g)`}
                         </span>
                       </span>
@@ -464,6 +514,18 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
           showMeal
           onConfirm={confirmItemModal}
           onClose={() => setPendingItem(null)}
+        />
+      )}
+      {editingEntry && (
+        <ItemModal
+          item={entryBase(editingEntry)}
+          fromOFF={false}
+          meal={editingEntry.meal as MealKey}
+          showMeal
+          initialAmount={editingEntry.amount}
+          confirmLabel="Speichern"
+          onConfirm={saveEntryEdit}
+          onClose={() => setEditingEntry(null)}
         />
       )}
     </>

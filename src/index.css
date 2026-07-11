@@ -141,12 +141,30 @@ body {
 .status-bar span + span { border-left: 1px solid var(--border); padding-left: 14px; }
 .status-bar .status-flex { flex: 1; }
 
+/* ---------- Bottom navigation (phones only) ---------- */
+.bottom-nav { display: none; }
+.bottom-nav button {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  background: none; border: none; padding: 6px 0; cursor: pointer;
+  color: var(--text2); font-family: inherit; font-size: 10px;
+}
+.bottom-nav .bn-icon { font-size: 20px; line-height: 1; }
+.bottom-nav button.active { color: var(--accent); }
+.bottom-nav button.active .bn-icon { transform: translateY(-1px); }
+
 /* On phones the classic menu bar is redundant with the icon tool bar below it
    (all its actions live there too), so hide it and let the tool bar stick
-   directly under the title bar. */
+   directly under the title bar. Navigation moves to a thumb-friendly bottom bar. */
 @media (max-width: 640px) {
   .menu-bar { display: none; }
   .tool-bar { top: 34px; }
+  .tool-tab { display: none; }
+  .status-bar { display: none; }
+  .bottom-nav {
+    display: flex; position: sticky; bottom: 0; z-index: 25;
+    background: var(--bg3); border-top: 1px solid var(--border2);
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
 }
 
 /* Visible keyboard focus for the clickable rows (db list, table rows, history). */
@@ -277,6 +295,9 @@ input.calc-locked:focus { box-shadow: none; border-color: var(--border); }
 .grid-row.editing, .grid-row.editing:nth-child(even) { background: var(--bg4); box-shadow: inset 3px 0 0 var(--accent); }
 .grid-col-name { flex: 1; min-width: 0; }
 .grid-col-name span, .grid-name-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+.grid-name-edit { cursor: pointer; }
+.grid-name-edit:hover { color: var(--accent2); text-decoration: underline; }
+.grid-name-edit:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 2px; }
 .grid-col-m { width: 56px; text-align: right; flex-shrink: 0; }
 .grid-col-k { width: 62px; text-align: right; flex-shrink: 0; font-weight: 600; color: var(--accent2); }
 .grid-col-del { width: 30px; flex-shrink: 0; text-align: center; padding: 0 !important; }

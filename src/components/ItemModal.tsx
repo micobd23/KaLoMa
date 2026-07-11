@@ -8,12 +8,14 @@ interface Props {
   fromOFF: boolean
   meal?: MealKey
   showMeal?: boolean
+  initialAmount?: number
+  confirmLabel?: string
   onConfirm: (amount: number, saveToDb: boolean, meal: MealKey) => void
   onClose: () => void
 }
 
-export default function ItemModal({ item, fromOFF, meal = 'frühstück', showMeal = false, onConfirm, onClose }: Props) {
-  const [amount, setAmount] = useState('100')
+export default function ItemModal({ item, fromOFF, meal = 'frühstück', showMeal = false, initialAmount, confirmLabel = 'Hinzufügen', onConfirm, onClose }: Props) {
+  const [amount, setAmount] = useState(initialAmount != null ? String(initialAmount) : '100')
   const [saveToDb, setSaveToDb] = useState(fromOFF)
   const [mealSel, setMealSel] = useState<MealKey>(meal)
   useEscapeKey(onClose)
@@ -62,7 +64,7 @@ export default function ItemModal({ item, fromOFF, meal = 'frühstück', showMea
         )}
         <div className="modal-btns">
           <button className="btn" onClick={onClose}>Abbrechen</button>
-          <button className="btn btn-primary" onClick={() => onConfirm(parseFloat(amount) || 0, saveToDb, mealSel)}>Hinzufügen</button>
+          <button className="btn btn-primary" onClick={() => onConfirm(parseFloat(amount) || 0, saveToDb, mealSel)}>{confirmLabel}</button>
         </div>
       </div>
     </div>
