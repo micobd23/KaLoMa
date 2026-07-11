@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from 'react'
 import { supabase, MEALS, r, kj, dateKey, formatDate, decimalInput } from '../lib/supabase'
-import type { FoodItem, LogEntry, MealKey } from '../lib/supabase'
+import type { FoodItem, LogEntry, MealKey, Goals } from '../lib/supabase'
 import ItemModal from '../components/ItemModal'
 import { useToast } from '../components/ToastProvider'
 import { onActivate } from '../lib/a11y'
@@ -11,7 +11,7 @@ const LOAD_ERROR = 'Daten konnten nicht geladen werden. Bitte Internetverbindung
 
 interface Props {
   userId: string
-  kcalGoal: number | null
+  goals: Goals
   date: Date
   onDateChange: (d: Date) => void
 }
@@ -20,7 +20,7 @@ interface PendingItem { item: FoodItem; fromOFF: boolean }
 
 interface SugItem extends FoodItem { source: 'off'; brand?: string }
 
-export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Props) {
+export default function TrackerPage({ userId, goals, date, onDateChange }: Props) {
   const { showToast } = useToast()
   const [log, setLog] = useState<LogEntry[]>([])
   const [logLoading, setLogLoading] = useState(true)
@@ -285,8 +285,14 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
     entries: log.filter(e => e.meal === m.key),
   })).filter(g => g.entries.length > 0)
 
-  const pct = kcalGoal ? Math.min((totals.kcal / kcalGoal) * 100, 100) : 0
-  const remaining = kcalGoal ? kcalGoal - Math.round(totals.kcal) : 0
+  const pct = goals.kcal ? Math.min((totals.kcal / goals.kcal) * 100, 100) : 0
+  const remaining = goals.kcal ? goals.kcal - Math.round(totals.kcal) : 0
+
+  const macroGoalRows = ([
+    ['Protein', totals.protein, goals.protein],
+    ['Kohlenhydrate', totals.carbs, goals.carbs],
+    ['Fett', totals.fat, goals.fat],
+  ] as const).filter(([, , g]) => g != null) as [string, number, number][]
 
   return (
     <>
@@ -306,10 +312,10 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
       </div>
 
       {/* Goal progress */}
-      {kcalGoal && (
+      {goals.kcal && (
         <div className="goal-bar-wrap">
           <div className="goal-bar-meta">
-            <span>{Math.round(totals.kcal)} / {kcalGoal} kcal</span>
+            <span>{Math.round(totals.kcal)} / {goals.kcal} kcal</span>
             <span className={remaining < 0 ? 'over' : ''}>
               {remaining >= 0 ? `noch ${remaining} kcal` : `${Math.abs(remaining)} kcal über Ziel`}
             </span>
@@ -317,6 +323,26 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
           <div className="goal-bar-track">
             <div className={`goal-bar-fill${remaining < 0 ? ' over' : ''}`} style={{ width: `${pct}%` }} />
           </div>
+        </div>
+      )}
+
+      {/* Macro goal progress */}
+      {macroGoalRows.length > 0 && (
+        <div className="macro-goals">
+          {macroGoalRows.map(([label, val, goal]) => {
+            const over = val > goal
+            return (
+              <div key={label} className="macro-goal-row">
+                <div className="goal-bar-meta">
+                  <span>{label}</span>
+                  <span className={over ? 'over' : ''}>{r(val)} / {goal} g</span>
+                </div>
+                <div className="goal-bar-track">
+                  <div className={`goal-bar-fill${over ? ' over' : ''}`} style={{ width: `${Math.min((val / goal) * 100, 100)}%` }} />
+                </div>
+              </div>
+            )
+          })}
         </div>
       )}
 

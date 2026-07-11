@@ -34,6 +34,13 @@ export type LogEntry = {
   fat: number
 }
 
+export interface Goals {
+  kcal: number | null
+  protein: number | null
+  carbs: number | null
+  fat: number | null
+}
+
 export const MEALS = [
   { key: 'frühstück',   label: '☀️ Frühstück' },
   { key: 'mittagessen', label: '🌤 Mittagessen' },

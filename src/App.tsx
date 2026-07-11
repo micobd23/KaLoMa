@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase, dateKey, formatDate } from './lib/supabase'
+import type { Goals } from './lib/supabase'
+
+const EMPTY_GOALS: Goals = { kcal: null, protein: null, carbs: null, fat: null }
 import { useToast } from './components/ToastProvider'
 import { useEscapeKey } from './lib/useEscapeKey'
 import AuthPage from './components/AuthPage'
@@ -26,7 +29,7 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [aboutOpen, setAboutOpen] = useState(false)
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false)
-  const [kcalGoal, setKcalGoal] = useState<number | null>(null)
+  const [goals, setGoals] = useState<Goals>(EMPTY_GOALS)
   const [logRefreshKey, setLogRefreshKey] = useState(0)
 
   const [openMenu, setOpenMenu] = useState<string | null>(null)
@@ -42,11 +45,16 @@ export default function App() {
   const loadSettings = useCallback(async (userId: string) => {
     const { data, error } = await supabase
       .from('user_settings')
-      .select('kcal_goal')
+      .select('kcal_goal, protein_goal, carbs_goal, fat_goal')
       .eq('user_id', userId)
       .maybeSingle()
     if (error) { showToast('Einstellungen konnten nicht geladen werden. Bitte Internetverbindung prüfen.', { type: 'error' }); return }
-    if (data) setKcalGoal(data.kcal_goal ?? null)
+    if (data) setGoals({
+      kcal: data.kcal_goal ?? null,
+      protein: data.protein_goal ?? null,
+      carbs: data.carbs_goal ?? null,
+      fat: data.fat_goal ?? null,
+    })
   }, [showToast])
 
   useEffect(() => {
@@ -58,7 +66,7 @@ export default function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, s) => {
       setSession(s)
       if (s) loadSettings(s.user.id)
-      else setKcalGoal(null)
+      else setGoals(EMPTY_GOALS)
     })
     return () => subscription.unsubscribe()
   }, [loadSettings])
@@ -87,15 +95,18 @@ export default function App() {
     return () => navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange)
   }, [showToast])
 
-  async function saveSettings(goal: number | null) {
+  async function saveSettings(next: Goals) {
     if (!session) return
     const { error } = await supabase.from('user_settings').upsert({
       user_id: session.user.id,
-      kcal_goal: goal,
+      kcal_goal: next.kcal,
+      protein_goal: next.protein,
+      carbs_goal: next.carbs,
+      fat_goal: next.fat,
       updated_at: new Date().toISOString(),
     })
     if (error) { showToast('Fehler beim Speichern. Bitte Internetverbindung prüfen.', { type: 'error' }); return }
-    setKcalGoal(goal)
+    setGoals(next)
     setSettingsOpen(false)
   }
 
@@ -187,7 +198,7 @@ export default function App() {
               <TrackerPage
                 key={logRefreshKey}
                 userId={session.user.id}
-                kcalGoal={kcalGoal}
+                goals={goals}
                 date={trackerDate}
                 onDateChange={setTrackerDate}
               />
@@ -209,7 +220,7 @@ export default function App() {
             <span>{TAB_LABEL[tab]}</span>
             {tab === 'tracker' && <span>{formatDate(trackerDate)}</span>}
             <span className="status-flex" />
-            <span>Ziel: {kcalGoal ? 'AN' : 'AUS'}</span>
+            <span>Ziel: {goals.kcal ? 'AN' : 'AUS'}</span>
           </div>
 
           <nav className="bottom-nav">
@@ -227,7 +238,7 @@ export default function App() {
       )}
 
       {settingsOpen && (
-        <SettingsModal current={kcalGoal} onSave={saveSettings} onClose={() => setSettingsOpen(false)} />
+        <SettingsModal current={goals} onSave={saveSettings} onClose={() => setSettingsOpen(false)} />
       )}
       {aboutOpen && <AboutDialog onClose={() => setAboutOpen(false)} />}
       {logoutConfirmOpen && (
