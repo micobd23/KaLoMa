@@ -3,6 +3,7 @@ import { supabase, r, kj, decimalInput } from '../lib/supabase'
 import type { FoodItem, MealKey } from '../lib/supabase'
 import ItemModal from '../components/ItemModal'
 import { useToast } from '../components/ToastProvider'
+import { onActivate } from '../lib/a11y'
 
 const BarcodeScanner = lazy(() => import('../components/BarcodeScanner'))
 const SAVE_ERROR = 'Fehler beim Speichern. Bitte Internetverbindung prüfen.'
@@ -218,7 +219,10 @@ export default function DatabasePage({ userId, meal, currentDate, onLogUpdate }:
           <div
             key={item.id}
             className={`grid-row editable${editingId === item.id ? ' editing' : ''}`}
+            role="button"
+            tabIndex={0}
             onClick={() => startEdit(item)}
+            onKeyDown={onActivate(() => startEdit(item))}
           >
             <span className="grid-col-name"><span className="grid-name-text">{item.name}</span></span>
             <span className="grid-col-m">{r(item.protein)}</span>

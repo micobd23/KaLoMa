@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase, r, dateKey } from '../lib/supabase'
 import { useToast } from '../components/ToastProvider'
+import { onActivate } from '../lib/a11y'
 
 const LOAD_ERROR = 'Daten konnten nicht geladen werden. Bitte Internetverbindung prüfen.'
 
@@ -106,7 +107,7 @@ export default function StatsPage({ userId, onJumpToDay }: Props) {
         {loading ? <p className="loading-msg">Lädt…</p>
           : !histDays.length ? <p className="empty">Keine Daten im gewählten Zeitraum.</p>
           : histDays.map((day, i) => (
-            <div key={i} className="history-row" onClick={() => onJumpToDay(day.date)}>
+            <div key={i} className="history-row" role="button" tabIndex={0} onClick={() => onJumpToDay(day.date)} onKeyDown={onActivate(() => onJumpToDay(day.date))}>
               <span className="history-date">{day.date.toLocaleDateString('de-DE', { day: 'numeric', month: 'short' })}</span>
               <span className="history-kcal">{Math.round(day.kcal)} kcal</span>
               <span className="history-macros">{r(day.protein)}P · {r(day.carbs)}Kh · {r(day.fat)}F</span>

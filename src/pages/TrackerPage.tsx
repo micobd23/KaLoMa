@@ -3,6 +3,7 @@ import { supabase, MEALS, r, kj, dateKey, formatDate, decimalInput } from '../li
 import type { FoodItem, LogEntry, MealKey } from '../lib/supabase'
 import ItemModal from '../components/ItemModal'
 import { useToast } from '../components/ToastProvider'
+import { onActivate } from '../lib/a11y'
 
 const BarcodeScanner = lazy(() => import('../components/BarcodeScanner'))
 const SAVE_ERROR = 'Fehler beim Speichern. Bitte Internetverbindung prüfen.'
@@ -326,7 +327,10 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
                   <div
                     key={item.id}
                     className={`db-list-row${selectedBase?.name === item.name ? ' selected' : ''}`}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => selectFromDb(item)}
+                    onKeyDown={onActivate(() => selectFromDb(item))}
                   >
                     <span className="db-list-name">{item.name}</span>
                     <span className="db-list-kcal">{Math.round(item.kcal)} kcal</span>
