@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { BrowserMultiFormatReader, DecodeHintType, BarcodeFormat } from '@zxing/library'
 import type { Result } from '@zxing/library'
+import { useEscapeKey } from '../lib/useEscapeKey'
 
 interface Props {
   onScan: (barcode: string) => void
@@ -11,6 +12,8 @@ export default function BarcodeScanner({ onScan, onClose }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const readerRef = useRef<BrowserMultiFormatReader | null>(null)
   const [status, setStatus] = useState('Kamera wird gestartet…')
+
+  useEscapeKey(handleClose)
 
   useEffect(() => {
     start()

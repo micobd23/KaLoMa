@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase, r, dateKey } from '../lib/supabase'
+import { useToast } from '../components/ToastProvider'
+
+const LOAD_ERROR = 'Daten konnten nicht geladen werden. Bitte Internetverbindung prüfen.'
 
 interface Props {
   userId: string
@@ -16,6 +19,7 @@ interface DayStats {
 }
 
 export default function StatsPage({ userId, onJumpToDay }: Props) {
+  const { showToast } = useToast()
   const [range, setRange] = useState(7)
   const [days, setDays] = useState<DayStats[]>([])
   const [loading, setLoading] = useState(true)
@@ -23,12 +27,13 @@ export default function StatsPage({ userId, onJumpToDay }: Props) {
   const fetchStats = useCallback(async () => {
     setLoading(true)
     const from = new Date(); from.setHours(0,0,0,0); from.setDate(from.getDate() - (range - 1))
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('food_log')
       .select('date, kcal, protein, carbs, fat')
       .eq('user_id', userId)
       .gte('date', dateKey(from))
       .lte('date', dateKey(new Date()))
+    if (error) showToast(LOAD_ERROR, { type: 'error' })
     const entries = (data ?? []) as { date: string; kcal: number; protein: number; carbs: number; fat: number }[]
 
     const result: DayStats[] = []
@@ -44,7 +49,7 @@ export default function StatsPage({ userId, onJumpToDay }: Props) {
     }
     setDays(result)
     setLoading(false)
-  }, [userId, range])
+  }, [userId, range, showToast])
 
   useEffect(() => { fetchStats() }, [fetchStats])
 

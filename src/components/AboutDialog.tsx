@@ -1,8 +1,11 @@
+import { useEscapeKey } from '../lib/useEscapeKey'
+
 interface Props {
   onClose: () => void
 }
 
 export default function AboutDialog({ onClose }: Props) {
+  useEscapeKey(onClose)
   return (
     <div className="modal-overlay open" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal">

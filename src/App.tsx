@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase, dateKey, formatDate } from './lib/supabase'
 import { useToast } from './components/ToastProvider'
+import { useEscapeKey } from './lib/useEscapeKey'
 import AuthPage from './components/AuthPage'
 import SettingsModal from './components/SettingsModal'
 import AboutDialog from './components/AboutDialog'
@@ -36,6 +37,18 @@ export default function App() {
   const today = new Date(); today.setHours(0, 0, 0, 0)
   const [trackerDate, setTrackerDate] = useState(today)
 
+  useEscapeKey(useCallback(() => setLogoutConfirmOpen(false), []))
+
+  const loadSettings = useCallback(async (userId: string) => {
+    const { data, error } = await supabase
+      .from('user_settings')
+      .select('kcal_goal')
+      .eq('user_id', userId)
+      .maybeSingle()
+    if (error) { showToast('Einstellungen konnten nicht geladen werden. Bitte Internetverbindung prüfen.', { type: 'error' }); return }
+    if (data) setKcalGoal(data.kcal_goal ?? null)
+  }, [showToast])
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session)
@@ -48,7 +61,7 @@ export default function App() {
       else setKcalGoal(null)
     })
     return () => subscription.unsubscribe()
-  }, [])
+  }, [loadSettings])
 
   useEffect(() => {
     function handler(e: MouseEvent) {
@@ -73,15 +86,6 @@ export default function App() {
     navigator.serviceWorker.addEventListener('controllerchange', onControllerChange)
     return () => navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange)
   }, [showToast])
-
-  async function loadSettings(userId: string) {
-    const { data } = await supabase
-      .from('user_settings')
-      .select('kcal_goal')
-      .eq('user_id', userId)
-      .maybeSingle()
-    if (data) setKcalGoal(data.kcal_goal ?? null)
-  }
 
   async function saveSettings(goal: number | null) {
     if (!session) return
@@ -123,9 +127,9 @@ export default function App() {
     <div className={`app-shell${compact ? ' compact' : ''}`}>
       <div className="title-bar">
         <div className="traffic-lights">
-          <button className="traffic-light red" title="Abmelden" onClick={handleClose} />
-          <button className="traffic-light yellow" title="Einklappen" onClick={() => setCollapsed(c => !c)} />
-          <button className="traffic-light green" title="Breite umschalten" onClick={() => setCompact(c => !c)} />
+          <button className="traffic-light red" title="Abmelden" aria-label="Abmelden" onClick={handleClose} />
+          <button className="traffic-light yellow" title="Einklappen" aria-label="Einklappen" onClick={() => setCollapsed(c => !c)} />
+          <button className="traffic-light green" title="Breite umschalten" aria-label="Breite umschalten" onClick={() => setCompact(c => !c)} />
         </div>
         <div className="title-bar-title">KaLoMa 4.60 – {TAB_LABEL[tab]}</div>
       </div>
@@ -170,12 +174,12 @@ export default function App() {
           </div>
 
           <div className="tool-bar">
-            <button className={`tool-btn${tab === 'tracker' ? ' active' : ''}`} title="Tageslog" onClick={() => setTab('tracker')}>📝</button>
-            <button className={`tool-btn${tab === 'stats' ? ' active' : ''}`} title="Statistik" onClick={() => setTab('stats')}>📊</button>
-            <button className={`tool-btn${tab === 'db' ? ' active' : ''}`} title="Kalorientabelle" onClick={() => setTab('db')}>🗂</button>
+            <button className={`tool-btn${tab === 'tracker' ? ' active' : ''}`} title="Tageslog" aria-label="Tageslog" onClick={() => setTab('tracker')}>📝</button>
+            <button className={`tool-btn${tab === 'stats' ? ' active' : ''}`} title="Statistik" aria-label="Statistik" onClick={() => setTab('stats')}>📊</button>
+            <button className={`tool-btn${tab === 'db' ? ' active' : ''}`} title="Kalorientabelle" aria-label="Kalorientabelle" onClick={() => setTab('db')}>🗂</button>
             <div className="tool-sep" />
-            <button className="tool-btn" title="Einstellungen" onClick={() => setSettingsOpen(true)}>⚙</button>
-            <button className="tool-btn" title="Über KaLoMa" onClick={() => setAboutOpen(true)}>❓</button>
+            <button className="tool-btn" title="Einstellungen" aria-label="Einstellungen" onClick={() => setSettingsOpen(true)}>⚙</button>
+            <button className="tool-btn" title="Über KaLoMa" aria-label="Über KaLoMa" onClick={() => setAboutOpen(true)}>❓</button>
           </div>
 
           <main>

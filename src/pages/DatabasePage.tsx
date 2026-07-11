@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react'
 import { supabase, r, kj, decimalInput } from '../lib/supabase'
-import type { FoodItem } from '../lib/supabase'
+import type { FoodItem, MealKey } from '../lib/supabase'
 import ItemModal from '../components/ItemModal'
 import { useToast } from '../components/ToastProvider'
 
 const BarcodeScanner = lazy(() => import('../components/BarcodeScanner'))
 const SAVE_ERROR = 'Fehler beim Speichern. Bitte Internetverbindung prüfen.'
+const LOAD_ERROR = 'Daten konnten nicht geladen werden. Bitte Internetverbindung prüfen.'
 
 interface Props {
   userId: string
@@ -34,14 +35,15 @@ export default function DatabasePage({ userId, meal, currentDate, onLogUpdate }:
 
   const fetchDb = useCallback(async () => {
     setLoading(true)
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('food_db')
       .select('*')
       .eq('user_id', userId)
       .order('name')
+    if (error) showToast(LOAD_ERROR, { type: 'error' })
     setDb((data as DbItem[]) ?? [])
     setLoading(false)
-  }, [userId])
+  }, [userId, showToast])
 
   useEffect(() => { fetchDb() }, [fetchDb])
 
@@ -127,13 +129,13 @@ export default function DatabasePage({ userId, meal, currentDate, onLogUpdate }:
     setDb(prev => prev.filter(i => i.id !== id))
   }
 
-  async function confirmAdd(item: FoodItem, amount: number) {
+  async function confirmAdd(item: FoodItem, amount: number, selectedMeal: MealKey) {
     if (amount <= 0) { showToast('Bitte eine Menge größer als 0 eingeben.', { type: 'error' }); return }
     const fac = amount / 100
     const { error } = await supabase.from('food_log').insert({
       user_id: userId,
       date: currentDate,
-      meal,
+      meal: selectedMeal,
       name: item.name,
       amount,
       kcal: item.kcal * fac,
@@ -153,7 +155,7 @@ export default function DatabasePage({ userId, meal, currentDate, onLogUpdate }:
           {editingId ? 'Lebensmittel bearbeiten' : 'Neues Lebensmittel anlegen'}
           <span style={{ fontWeight: 400, color: 'var(--text3)', fontSize: 10, marginLeft: 6 }}>· Werte pro 100g</span>
         </span>
-        <button className="scan-btn" onClick={() => setScannerOpen(true)} title="Barcode scannen und direkt in die Datenbank speichern">📷</button>
+        <button className="scan-btn" onClick={() => setScannerOpen(true)} title="Barcode scannen und direkt in die Datenbank speichern" aria-label="Barcode scannen und direkt in die Datenbank speichern">📷</button>
       </div>
       <div className="card">
         <div className="form-row" style={{ gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr' }}>
@@ -226,10 +228,10 @@ export default function DatabasePage({ userId, meal, currentDate, onLogUpdate }:
             <span className="grid-col-k">{Math.round(item.kcal)}</span>
             <span className="grid-col-m hide-sm"><span className="grid-name-text">{item.category || '—'}</span></span>
             <span className="grid-col-del">
-              <button className="db-add-btn" title="Ins Log übernehmen" onClick={e => { e.stopPropagation(); setPendingItem(item) }}>+</button>
+              <button className="db-add-btn" title="Ins Log übernehmen" aria-label={`${item.name} ins Log übernehmen`} onClick={e => { e.stopPropagation(); setPendingItem(item) }}>+</button>
             </span>
             <span className="grid-col-del">
-              <button className="del-btn" title="Löschen" onClick={e => { e.stopPropagation(); deleteItem(item.id) }}>×</button>
+              <button className="del-btn" title="Löschen" aria-label={`${item.name} löschen`} onClick={e => { e.stopPropagation(); deleteItem(item.id) }}>×</button>
             </span>
           </div>
         ))}
@@ -239,7 +241,9 @@ export default function DatabasePage({ userId, meal, currentDate, onLogUpdate }:
         <ItemModal
           item={pendingItem}
           fromOFF={false}
-          onConfirm={(amount) => confirmAdd(pendingItem, amount)}
+          meal={meal as MealKey}
+          showMeal
+          onConfirm={(amount, _saveToDb, selectedMeal) => confirmAdd(pendingItem, amount, selectedMeal)}
           onClose={() => setPendingItem(null)}
         />
       )}

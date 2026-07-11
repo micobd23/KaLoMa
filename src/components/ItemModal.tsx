@@ -1,17 +1,22 @@
 import { useState } from 'react'
-import { r, decimalInput } from './../lib/supabase'
-import type { FoodItem } from '../lib/supabase'
+import { r, decimalInput, MEALS } from './../lib/supabase'
+import type { FoodItem, MealKey } from '../lib/supabase'
+import { useEscapeKey } from '../lib/useEscapeKey'
 
 interface Props {
   item: FoodItem
   fromOFF: boolean
-  onConfirm: (amount: number, saveToDb: boolean) => void
+  meal?: MealKey
+  showMeal?: boolean
+  onConfirm: (amount: number, saveToDb: boolean, meal: MealKey) => void
   onClose: () => void
 }
 
-export default function ItemModal({ item, fromOFF, onConfirm, onClose }: Props) {
+export default function ItemModal({ item, fromOFF, meal = 'frühstück', showMeal = false, onConfirm, onClose }: Props) {
   const [amount, setAmount] = useState('100')
   const [saveToDb, setSaveToDb] = useState(fromOFF)
+  const [mealSel, setMealSel] = useState<MealKey>(meal)
+  useEscapeKey(onClose)
 
   const fac = (parseFloat(amount) || 0) / 100
   const preview = {
@@ -41,6 +46,14 @@ export default function ItemModal({ item, fromOFF, onConfirm, onClose }: Props) 
         <p className="modal-preview">
           → {preview.kcal} kcal · {preview.protein}g P · {preview.carbs}g Kh · {preview.fat}g Fett
         </p>
+        {showMeal && (
+          <div className="field" style={{ marginTop: 10 }}>
+            <label>Mahlzeit</label>
+            <select value={mealSel} onChange={e => setMealSel(e.target.value as MealKey)}>
+              {MEALS.map(m => <option key={m.key} value={m.key}>{m.label}</option>)}
+            </select>
+          </div>
+        )}
         {fromOFF && (
           <label className="modal-save-row">
             <input type="checkbox" checked={saveToDb} onChange={e => setSaveToDb(e.target.checked)} style={{ accentColor: 'var(--accent)' }} />
@@ -49,7 +62,7 @@ export default function ItemModal({ item, fromOFF, onConfirm, onClose }: Props) 
         )}
         <div className="modal-btns">
           <button className="btn" onClick={onClose}>Abbrechen</button>
-          <button className="btn btn-primary" onClick={() => onConfirm(parseFloat(amount) || 0, saveToDb)}>Hinzufügen</button>
+          <button className="btn btn-primary" onClick={() => onConfirm(parseFloat(amount) || 0, saveToDb, mealSel)}>Hinzufügen</button>
         </div>
       </div>
     </div>

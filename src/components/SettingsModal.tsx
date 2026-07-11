@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useToast } from './ToastProvider'
+import { useEscapeKey } from '../lib/useEscapeKey'
 
 interface Props {
   current: number | null
@@ -11,9 +12,17 @@ interface Props {
 export default function SettingsModal({ current, onSave, onClose }: Props) {
   const { showToast } = useToast()
   const [goal, setGoal] = useState(current?.toString() ?? '')
+  useEscapeKey(onClose)
 
   async function handleSave() {
-    const val = parseInt(goal) || null
+    const trimmed = goal.trim()
+    // Empty means "no goal" – hides the progress bar.
+    if (!trimmed) { onSave(null); return }
+    const val = parseInt(trimmed, 10)
+    if (isNaN(val) || val < 500 || val > 9999) {
+      showToast('Bitte ein Kalorienziel zwischen 500 und 9999 eingeben (oder leer lassen).', { type: 'error' })
+      return
+    }
     onSave(val)
   }
 

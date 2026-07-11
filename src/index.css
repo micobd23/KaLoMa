@@ -11,7 +11,7 @@
   --border2:       #8b98a8;
   --text:          #1c1f24;
   --text2:         #4a5568;
-  --text3:         #838d99;
+  --text3:         #6a7280;
   --accent:        #3568c4;
   --accent2:       #284e99;
   --danger:        #d3352b;
@@ -141,6 +141,14 @@ body {
 .status-bar span + span { border-left: 1px solid var(--border); padding-left: 14px; }
 .status-bar .status-flex { flex: 1; }
 
+/* On phones the classic menu bar is redundant with the icon tool bar below it
+   (all its actions live there too), so hide it and let the tool bar stick
+   directly under the title bar. */
+@media (max-width: 640px) {
+  .menu-bar { display: none; }
+  .tool-bar { top: 34px; }
+}
+
 main { width: 100%; padding: 1rem; padding-bottom: 2rem; flex: 1; }
 
 .card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: .85rem 1rem; margin-bottom: 1rem; }
@@ -158,6 +166,12 @@ input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px r
 input::placeholder { color: var(--text3); }
 input[type="number"] { -moz-appearance: textfield; }
 input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+/* Auto-calculated fields: shown but not editable (values derive from the amount). */
+input.calc-locked {
+  background: var(--bg3); color: var(--text2); cursor: default;
+  border-color: var(--border); border-style: dashed;
+}
+input.calc-locked:focus { box-shadow: none; border-color: var(--border); }
 .field label { display: block; font-size: 10.5px; color: var(--text2); margin-bottom: 3px; font-weight: 600; }
 .form-row .field label { min-height: 2.6em; display: flex; align-items: flex-end; }
 
@@ -363,3 +377,14 @@ input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-i
 .toast-action { flex-shrink: 0; height: 26px; padding: 0 10px; background: var(--accent); border: 1px solid var(--accent2); border-radius: var(--radius); color: #fff; font-size: 11.5px; font-weight: 500; cursor: pointer; font-family: inherit; }
 .toast-close { flex-shrink: 0; background: none; border: none; color: var(--text3); cursor: pointer; font-size: 15px; line-height: 1; padding: 0 2px; font-family: inherit; }
 .toast-close:hover { color: var(--text); }
+
+/* ---------- Larger touch targets on phones (desktop density stays as-is) ---------- */
+@media (max-width: 640px) {
+  .btn { height: 40px; }
+  .tool-btn { height: 40px; min-width: 44px; }
+  .scan-btn { height: 40px; width: 44px; }
+  .date-nav button { width: 40px; height: 40px; font-size: 18px; }
+  .meal-btn, .range-btn { padding-top: 10px; padding-bottom: 10px; }
+  .del-btn, .db-add-btn { min-height: 40px; font-size: 18px; }
+  .db-list-row { padding-top: 9px; padding-bottom: 9px; }
+}

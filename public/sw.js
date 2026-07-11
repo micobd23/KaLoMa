@@ -1,4 +1,4 @@
-const CACHE = 'kaloma-v1';
+const CACHE = 'kaloma-v2';
 const ASSETS = ['/', '/index.html'];
 
 self.addEventListener('install', e => {
@@ -15,13 +15,20 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
+  const req = e.request;
+  // Only handle our own static GET requests. Supabase/Open Food Facts calls and
+  // any non-GET requests (POST/PUT/DELETE) pass straight through to the network,
+  // so we never try (and fail) to cache them or serve them stale.
+  if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
+
+  // Network-first: always try fresh, cache a copy, fall back to cache when offline.
   e.respondWith(
-    fetch(e.request, { cache: 'no-store' })
+    fetch(req, { cache: 'no-store' })
       .then(res => {
         const clone = res.clone();
-        caches.open(CACHE).then(c => c.put(e.request, clone));
+        caches.open(CACHE).then(c => c.put(req, clone)).catch(() => {});
         return res;
       })
-      .catch(() => caches.match(e.request))
+      .catch(() => caches.match(req).then(hit => hit || caches.match('/index.html')))
   );
 });

@@ -6,6 +6,7 @@ import { useToast } from '../components/ToastProvider'
 
 const BarcodeScanner = lazy(() => import('../components/BarcodeScanner'))
 const SAVE_ERROR = 'Fehler beim Speichern. Bitte Internetverbindung prüfen.'
+const LOAD_ERROR = 'Daten konnten nicht geladen werden. Bitte Internetverbindung prüfen.'
 
 interface Props {
   userId: string
@@ -48,20 +49,22 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
 
   const fetchLog = useCallback(async () => {
     setLogLoading(true)
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('food_log')
       .select('*')
       .eq('user_id', userId)
       .eq('date', dateKey(date))
       .order('created_at')
+    if (error) showToast(LOAD_ERROR, { type: 'error' })
     setLog((data as LogEntry[]) ?? [])
     setLogLoading(false)
-  }, [userId, date])
+  }, [userId, date, showToast])
 
   const fetchFoodDb = useCallback(async () => {
-    const { data } = await supabase.from('food_db').select('*').eq('user_id', userId).order('name')
-    setFoodDb((data as any[]) ?? [])
-  }, [userId])
+    const { data, error } = await supabase.from('food_db').select('*').eq('user_id', userId).order('name')
+    if (error) showToast(LOAD_ERROR, { type: 'error' })
+    setFoodDb((data as (FoodItem & { id: string })[]) ?? [])
+  }, [userId, showToast])
 
   useEffect(() => { fetchLog() }, [fetchLog])
   useEffect(() => { fetchFoodDb() }, [fetchFoodDb])
@@ -203,7 +206,7 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
     }
   }
 
-  async function confirmItemModal(amount: number, saveToDb: boolean) {
+  async function confirmItemModal(amount: number, saveToDb: boolean, selectedMeal: MealKey) {
     if (!pendingItem) return
     if (amount <= 0) { showToast('Bitte eine Menge größer als 0 eingeben.', { type: 'error' }); return }
     const { item } = pendingItem
@@ -217,7 +220,7 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
       }
     }
     const { error } = await supabase.from('food_log').insert({
-      user_id: userId, date: dateKey(date), meal,
+      user_id: userId, date: dateKey(date), meal: selectedMeal,
       name: item.name, amount,
       kcal: item.kcal * fac, protein: item.protein * fac,
       carbs: item.carbs * fac, fat: item.fat * fac,
@@ -248,9 +251,9 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
     <>
       {/* Date navigation */}
       <div className="date-nav">
-        <button onClick={() => onDateChange(new Date(date.getTime() - 86400000))}>‹</button>
+        <button aria-label="Vorheriger Tag" onClick={() => onDateChange(new Date(date.getTime() - 86400000))}>‹</button>
         <span className="date-label">{formatDate(date)}</span>
-        <button onClick={() => onDateChange(new Date(date.getTime() + 86400000))}>›</button>
+        <button aria-label="Nächster Tag" onClick={() => onDateChange(new Date(date.getTime() + 86400000))}>›</button>
       </div>
 
       {/* Macro summary */}
@@ -271,7 +274,7 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
             </span>
           </div>
           <div className="goal-bar-track">
-            <div className="goal-bar-fill" style={{ width: `${pct}%` }} />
+            <div className={`goal-bar-fill${remaining < 0 ? ' over' : ''}`} style={{ width: `${pct}%` }} />
           </div>
         </div>
       )}
@@ -288,7 +291,7 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
                   <input
                     type="text"
                     value={query}
-                    onChange={e => setQuery(e.target.value)}
+                    onChange={e => { setQuery(e.target.value); if (selectedBase) setSelectedBase(null) }}
                     onFocus={() => query && setShowSuggestions(true)}
                     onKeyDown={e => e.key === 'Enter' && !showSuggestions && addToLog()}
                     placeholder="Name eingeben oder Barcode scannen…"
@@ -311,7 +314,7 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
                   </div>
                 )}
               </div>
-              <button className="scan-btn" onClick={() => setScannerOpen(true)} title="Barcode scannen">📷</button>
+              <button className="scan-btn" onClick={() => setScannerOpen(true)} title="Barcode scannen" aria-label="Barcode scannen">📷</button>
             </div>
 
             <div className="field" style={{ marginBottom: 6 }}>
@@ -338,10 +341,10 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
                   <label>Menge</label>
                   <input type="text" inputMode="decimal" value={amount} onChange={e => handleAmountChange(decimalInput(e.target.value))} />
                 </div>
-                <div className="field"><label>kcal</label><input type="text" inputMode="decimal" value={kcalInput} onChange={e => setKcalInput(decimalInput(e.target.value))} placeholder="0" /></div>
-                <div className="field"><label>Protein</label><input type="text" inputMode="decimal" value={proteinInput} onChange={e => setProteinInput(decimalInput(e.target.value))} placeholder="0" /></div>
-                <div className="field"><label>KH</label><input type="text" inputMode="decimal" value={carbsInput} onChange={e => setCarbsInput(decimalInput(e.target.value))} placeholder="0" /></div>
-                <div className="field"><label>Fett</label><input type="text" inputMode="decimal" value={fatInput} onChange={e => setFatInput(decimalInput(e.target.value))} placeholder="0" /></div>
+                <div className="field"><label>kcal</label><input type="text" inputMode="decimal" value={kcalInput} onChange={e => setKcalInput(decimalInput(e.target.value))} placeholder="0" readOnly={!!selectedBase} tabIndex={selectedBase ? -1 : undefined} className={selectedBase ? 'calc-locked' : undefined} title={selectedBase ? 'Wird automatisch aus der Menge berechnet' : undefined} /></div>
+                <div className="field"><label>Protein</label><input type="text" inputMode="decimal" value={proteinInput} onChange={e => setProteinInput(decimalInput(e.target.value))} placeholder="0" readOnly={!!selectedBase} tabIndex={selectedBase ? -1 : undefined} className={selectedBase ? 'calc-locked' : undefined} title={selectedBase ? 'Wird automatisch aus der Menge berechnet' : undefined} /></div>
+                <div className="field"><label>KH</label><input type="text" inputMode="decimal" value={carbsInput} onChange={e => setCarbsInput(decimalInput(e.target.value))} placeholder="0" readOnly={!!selectedBase} tabIndex={selectedBase ? -1 : undefined} className={selectedBase ? 'calc-locked' : undefined} title={selectedBase ? 'Wird automatisch aus der Menge berechnet' : undefined} /></div>
+                <div className="field"><label>Fett</label><input type="text" inputMode="decimal" value={fatInput} onChange={e => setFatInput(decimalInput(e.target.value))} placeholder="0" readOnly={!!selectedBase} tabIndex={selectedBase ? -1 : undefined} className={selectedBase ? 'calc-locked' : undefined} title={selectedBase ? 'Wird automatisch aus der Menge berechnet' : undefined} /></div>
               </div>
               <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 8, minHeight: 16 }}>
                 {kcalInput && `→ ${kj(parseFloat(kcalInput) || 0)} kJ`}
@@ -395,7 +398,7 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
                       <span className="grid-col-m">{r(entry.fat)}</span>
                       <span className="grid-col-m hide-sm">{kj(entry.kcal)}</span>
                       <span className="grid-col-k">{Math.round(entry.kcal)}</span>
-                      <span className="grid-col-del"><button className="del-btn" onClick={() => deleteEntry(entry.id)}>×</button></span>
+                      <span className="grid-col-del"><button className="del-btn" aria-label={`${entry.name} löschen`} onClick={() => deleteEntry(entry.id)}>×</button></span>
                     </div>
                   ))}
                 </div>
@@ -453,6 +456,8 @@ export default function TrackerPage({ userId, kcalGoal, date, onDateChange }: Pr
         <ItemModal
           item={pendingItem.item}
           fromOFF={pendingItem.fromOFF}
+          meal={meal}
+          showMeal
           onConfirm={confirmItemModal}
           onClose={() => setPendingItem(null)}
         />
