@@ -61,6 +61,15 @@ export default function DatabasePage({ userId, meal, currentDate, onLogUpdate }:
     setName(''); setCategory(''); setKcal(''); setProtein(''); setCarbs(''); setFat('')
   }
 
+  // kcal follow the macros automatically (Atwater: 4 kcal/g protein & carbs, 9 kcal/g fat).
+  // The kcal field stays editable so a differing package value can still be entered.
+  function calcKcal(p: string, c: string, f: string) {
+    return String(Math.round((parseFloat(p) || 0) * 4 + (parseFloat(c) || 0) * 4 + (parseFloat(f) || 0) * 9))
+  }
+  function handleProtein(raw: string) { const v = decimalInput(raw); setProtein(v); setKcal(calcKcal(v, carbs, fat)) }
+  function handleCarbs(raw: string) { const v = decimalInput(raw); setCarbs(v); setKcal(calcKcal(protein, v, fat)) }
+  function handleFat(raw: string) { const v = decimalInput(raw); setFat(v); setKcal(calcKcal(protein, carbs, v)) }
+
   function startEdit(item: DbItem) {
     setEditingId(item.id)
     setName(item.name)
@@ -164,14 +173,14 @@ export default function DatabasePage({ userId, meal, currentDate, onLogUpdate }:
             <label>Name</label>
             <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="z.B. Haferflocken" onKeyDown={e => e.key === 'Enter' && saveItem()} />
           </div>
-          <div className="field"><label>kcal</label><input type="text" inputMode="decimal" value={kcal} onChange={e => setKcal(decimalInput(e.target.value))} placeholder="0" /></div>
-          <div className="field"><label>Protein (g)</label><input type="text" inputMode="decimal" value={protein} onChange={e => setProtein(decimalInput(e.target.value))} placeholder="0" /></div>
-          <div className="field"><label>Kohlen. (g)</label><input type="text" inputMode="decimal" value={carbs} onChange={e => setCarbs(decimalInput(e.target.value))} placeholder="0" /></div>
+          <div className="field"><label title="Wird aus den Makros berechnet – kann überschrieben werden">kcal ⚙</label><input type="text" inputMode="decimal" value={kcal} onChange={e => setKcal(decimalInput(e.target.value))} placeholder="0" /></div>
+          <div className="field"><label>Protein (g)</label><input type="text" inputMode="decimal" value={protein} onChange={e => handleProtein(e.target.value)} placeholder="0" /></div>
+          <div className="field"><label>Kohlen. (g)</label><input type="text" inputMode="decimal" value={carbs} onChange={e => handleCarbs(e.target.value)} placeholder="0" /></div>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', marginTop: 4, flexWrap: 'wrap' }}>
           <div className="field" style={{ width: 100 }}>
             <label>Fett (g)</label>
-            <input type="text" inputMode="decimal" value={fat} onChange={e => setFat(decimalInput(e.target.value))} placeholder="0" />
+            <input type="text" inputMode="decimal" value={fat} onChange={e => handleFat(e.target.value)} placeholder="0" />
           </div>
           <div className="field" style={{ width: 160 }}>
             <label>Rubrik (optional)</label>

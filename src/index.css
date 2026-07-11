@@ -299,9 +299,14 @@ input.calc-locked:focus { box-shadow: none; border-color: var(--border); }
 .grid-row.editing, .grid-row.editing:nth-child(even) { background: var(--bg4); box-shadow: inset 3px 0 0 var(--accent); }
 .grid-col-name { flex: 1; min-width: 0; }
 .grid-col-name span, .grid-name-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
-.grid-name-edit { cursor: pointer; }
-.grid-name-edit:hover { color: var(--accent2); text-decoration: underline; }
-.grid-name-edit:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 2px; }
+.grid-col-name-edit { display: flex; align-items: center; gap: 5px; }
+.grid-col-name-edit .grid-name-text { min-width: 0; flex: 1; }
+.row-edit-btn {
+  flex-shrink: 0; background: none; border: none; cursor: pointer;
+  font-size: 13px; line-height: 1; padding: 2px; opacity: .65; font-family: inherit;
+}
+.row-edit-btn:hover { opacity: 1; }
+.row-edit-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 0; border-radius: 2px; }
 .grid-col-m { width: 56px; text-align: right; flex-shrink: 0; }
 .grid-col-k { width: 62px; text-align: right; flex-shrink: 0; font-weight: 600; color: var(--accent2); }
 .grid-col-del { width: 30px; flex-shrink: 0; text-align: center; padding: 0 !important; }

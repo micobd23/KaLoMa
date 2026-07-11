@@ -461,15 +461,14 @@ export default function TrackerPage({ userId, goals, date, onDateChange }: Props
                   </div>
                   {group.entries.map(entry => (
                     <div key={entry.id} className="grid-row">
-                      <span className="grid-col-name">
-                        <span
-                          className="grid-name-text grid-name-edit"
-                          role="button"
-                          tabIndex={0}
-                          title="Zum Bearbeiten anklicken"
+                      <span className="grid-col-name grid-col-name-edit">
+                        <button
+                          className="row-edit-btn"
+                          title="Bearbeiten"
+                          aria-label={`${entry.name} bearbeiten`}
                           onClick={() => setEditingEntry(entry)}
-                          onKeyDown={onActivate(() => setEditingEntry(entry))}
-                        >
+                        >✏️</button>
+                        <span className="grid-name-text">
                           {entry.name}{entry.amount !== 100 && ` (${Math.round(entry.amount)}g)`}
                         </span>
                       </span>
