@@ -98,8 +98,9 @@ export default function TrackerPage({ userId, goals, date, onDateChange }: Props
   async function searchOFF(q: string) {
     setOffLoading(true)
     try {
-      const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=8&lc=de&fields=product_name,product_name_de,brands,nutriments`
+      const url = `https://world.openfoodfacts.org/api/v2/search?search_terms=${encodeURIComponent(q)}&page_size=8&lc=de&fields=product_name,product_name_de,brands,nutriments`
       const res = await fetch(url)
+      if (!res.ok) throw new Error('OFF search failed')
       const data = await res.json()
       const products = (data.products ?? []).filter((p: any) => {
         const nm = p.nutriments
