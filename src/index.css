@@ -70,35 +70,6 @@ body {
   margin-left: -48px; /* visually re-center against the traffic lights */
 }
 
-/* ---------- Menu bar ---------- */
-.menu-bar {
-  background: var(--bg2);
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  padding: 0 4px;
-  position: sticky;
-  top: 34px;
-  z-index: 29;
-  flex-shrink: 0;
-  overflow-x: auto;
-}
-.menu-item { position: relative; }
-.menu-item-btn {
-  background: none; border: none; font-family: inherit; font-size: 12.5px;
-  color: var(--text); padding: 5px 10px; cursor: pointer; white-space: nowrap;
-}
-.menu-item-btn:hover, .menu-item.open .menu-item-btn { background: var(--accent); color: #fff; }
-.menu-dropdown {
-  position: absolute; top: 100%; left: 0; min-width: 190px;
-  background: var(--bg2); border: 1px solid var(--border2); border-radius: 0 0 var(--radius) var(--radius);
-  box-shadow: 0 6px 16px rgba(0,0,0,.18); z-index: 40; padding: 3px 0;
-}
-.menu-dropdown button {
-  display: block; width: 100%; text-align: left; background: none; border: none;
-  font-family: inherit; font-size: 12.5px; color: var(--text); padding: 6px 14px; cursor: pointer;
-}
-.menu-dropdown button:hover { background: var(--accent); color: #fff; }
-
 /* ---------- Tool bar ---------- */
 .tool-bar {
   background: var(--bg3);
@@ -108,7 +79,7 @@ body {
   gap: 4px;
   padding: 4px 8px;
   position: sticky;
-  top: 65px;
+  top: 34px;
   z-index: 28;
   flex-shrink: 0;
   overflow-x: auto;
@@ -152,12 +123,9 @@ body {
 .bottom-nav button.active { color: var(--accent); }
 .bottom-nav button.active .bn-icon { transform: translateY(-1px); }
 
-/* On phones the classic menu bar is redundant with the icon tool bar below it
-   (all its actions live there too), so hide it and let the tool bar stick
-   directly under the title bar. Navigation moves to a thumb-friendly bottom bar. */
+/* On phones, tab navigation moves to a thumb-friendly bottom bar instead of
+   the icon tool bar / status bar. */
 @media (max-width: 640px) {
-  .menu-bar { display: none; }
-  .tool-bar { top: 34px; }
   .tool-tab { display: none; }
   .status-bar { display: none; }
   .bottom-nav {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase, dateKey, formatDate } from './lib/supabase'
 import type { Goals } from './lib/supabase'
@@ -32,10 +32,8 @@ export default function App() {
   const [goals, setGoals] = useState<Goals>(EMPTY_GOALS)
   const [logRefreshKey, setLogRefreshKey] = useState(0)
 
-  const [openMenu, setOpenMenu] = useState<string | null>(null)
   const [collapsed, setCollapsed] = useState(false)
   const [compact, setCompact] = useState(false)
-  const menuBarRef = useRef<HTMLDivElement>(null)
 
   const today = new Date(); today.setHours(0, 0, 0, 0)
   const [trackerDate, setTrackerDate] = useState(today)
@@ -70,14 +68,6 @@ export default function App() {
     })
     return () => subscription.unsubscribe()
   }, [loadSettings])
-
-  useEffect(() => {
-    function handler(e: MouseEvent) {
-      if (!menuBarRef.current?.contains(e.target as Node)) setOpenMenu(null)
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [])
 
   // Notify when a newly deployed service worker takes over an already-open tab
   useEffect(() => {
@@ -116,7 +106,6 @@ export default function App() {
   }
 
   function handleClose() {
-    setOpenMenu(null)
     setLogoutConfirmOpen(true)
   }
 
@@ -124,11 +113,6 @@ export default function App() {
     setLogoutConfirmOpen(false)
     const { error } = await supabase.auth.signOut()
     if (error) showToast('Abmelden fehlgeschlagen. Bitte Internetverbindung prüfen.', { type: 'error' })
-  }
-
-  function goTo(t: Tab) {
-    setTab(t)
-    setOpenMenu(null)
   }
 
   if (authLoading) return <div className="app-loading">🥗</div>
@@ -147,43 +131,6 @@ export default function App() {
 
       {!collapsed && (
         <>
-          <div className="menu-bar" ref={menuBarRef}>
-            <div className={`menu-item${openMenu === 'datei' ? ' open' : ''}`}>
-              <button className="menu-item-btn" onClick={() => setOpenMenu(m => m === 'datei' ? null : 'datei')}>Datei</button>
-              {openMenu === 'datei' && (
-                <div className="menu-dropdown">
-                  <button onClick={handleClose}>Abmelden</button>
-                </div>
-              )}
-            </div>
-            <div className={`menu-item${openMenu === 'ansicht' ? ' open' : ''}`}>
-              <button className="menu-item-btn" onClick={() => setOpenMenu(m => m === 'ansicht' ? null : 'ansicht')}>Ansicht</button>
-              {openMenu === 'ansicht' && (
-                <div className="menu-dropdown">
-                  <button onClick={() => goTo('tracker')}>Tageslog</button>
-                  <button onClick={() => goTo('stats')}>Statistik</button>
-                  <button onClick={() => goTo('db')}>Kalorientabelle</button>
-                </div>
-              )}
-            </div>
-            <div className={`menu-item${openMenu === 'extras' ? ' open' : ''}`}>
-              <button className="menu-item-btn" onClick={() => setOpenMenu(m => m === 'extras' ? null : 'extras')}>Extras</button>
-              {openMenu === 'extras' && (
-                <div className="menu-dropdown">
-                  <button onClick={() => { setSettingsOpen(true); setOpenMenu(null) }}>Einstellungen…</button>
-                </div>
-              )}
-            </div>
-            <div className={`menu-item${openMenu === 'hilfe' ? ' open' : ''}`}>
-              <button className="menu-item-btn" onClick={() => setOpenMenu(m => m === 'hilfe' ? null : 'hilfe')}>Hilfe</button>
-              {openMenu === 'hilfe' && (
-                <div className="menu-dropdown">
-                  <button onClick={() => { setAboutOpen(true); setOpenMenu(null) }}>Über KaLoMa…</button>
-                </div>
-              )}
-            </div>
-          </div>
-
           <div className="tool-bar">
             <button className={`tool-btn tool-tab${tab === 'tracker' ? ' active' : ''}`} title="Tageslog" aria-label="Tageslog" onClick={() => setTab('tracker')}>📝</button>
             <button className={`tool-btn tool-tab${tab === 'stats' ? ' active' : ''}`} title="Statistik" aria-label="Statistik" onClick={() => setTab('stats')}>📊</button>
