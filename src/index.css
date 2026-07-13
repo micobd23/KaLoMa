@@ -1,8 +1,6 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --win-chrome-1:  #e8edf5;
-  --win-chrome-2:  #c7d3e3;
   --win-bg:        #ece9e2;
   --bg2:           #ffffff;
   --bg3:           #f1f3f6;
@@ -37,37 +35,6 @@ body {
 .app-shell {
   width: 100%; max-width: 900px; margin: 0 auto;
   display: flex; flex-direction: column; flex: 1;
-  transition: max-width .15s ease;
-}
-.app-shell.compact { max-width: 640px; }
-
-/* ---------- Title bar ---------- */
-.title-bar {
-  background: linear-gradient(180deg, var(--win-chrome-1) 0%, var(--win-chrome-2) 100%);
-  border-bottom: 1px solid var(--border2);
-  height: 34px;
-  display: flex;
-  align-items: center;
-  padding: 0 10px;
-  position: sticky;
-  top: 0;
-  z-index: 30;
-  flex-shrink: 0;
-}
-.traffic-lights { display: flex; gap: 8px; flex-shrink: 0; }
-.traffic-light {
-  width: 12px; height: 12px; border-radius: 50%;
-  border: none; cursor: pointer; padding: 0;
-  box-shadow: inset 0 0 0 0.5px rgba(0,0,0,.15);
-}
-.traffic-light.red    { background: #ff5f57; }
-.traffic-light.yellow { background: #febc2e; }
-.traffic-light.green  { background: #28c840; }
-.traffic-light:hover  { filter: brightness(0.92); }
-.title-bar-title {
-  flex: 1; text-align: center; font-size: 12.5px; font-weight: 600;
-  color: var(--text); letter-spacing: -.01em;
-  margin-left: -48px; /* visually re-center against the traffic lights */
 }
 
 /* ---------- Tool bar ---------- */
@@ -79,7 +46,7 @@ body {
   gap: 4px;
   padding: 4px 8px;
   position: sticky;
-  top: 34px;
+  top: 0;
   z-index: 28;
   flex-shrink: 0;
   overflow-x: auto;
